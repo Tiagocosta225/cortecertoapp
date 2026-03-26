@@ -1,0 +1,27 @@
+{
+  "name": "@cortecerto/backend",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "generate": "prisma generate",
+    "build": "npm run generate",
+    "check": "node --check src/app.js && DATABASE_URL='postgresql://postgres:postgres@localhost:5432/postgres?schema=public' npx prisma validate",
+    "start": "prisma migrate deploy && prisma generate && node src/app.js",
+    "dev": "nodemon src/app.js"
+  },
+  "private": true,
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "dependencies": {
+    "@prisma/client": "^6.16.2",
+    "dotenv": "^17.2.3",
+    "express": "^5.1.0",
+    "prisma": "^6.13.0"
+  },
+  "description": "",
+  "devDependencies": {
+    "nodemon": "^3.1.10",
+    "prisma": "^6.13.0"
+  }
+}

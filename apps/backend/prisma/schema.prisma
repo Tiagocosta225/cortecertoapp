@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Barbearia {
+  id                 Int           @id @default(autoincrement())
+  nome               String
+  slug               String        @unique
+  endereco           String
+  telefone           String
+  descricao          String?
+  cidade             String?
+  instagram          String?
+  whatsappLink       String?
+  logoUrl            String?
+  horarioAbertura    String
+  horarioFechamento  String
+  ativa              Boolean       @default(true)
+  aceitaReservaPix   Boolean       @default(true)
+  taxaReservaPadrao  Float         @default(0)
+  tempoRetornoDias   Int           @default(20)
+  metaSemanal        Float         @default(0)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  agendamentos       Agendamento[]
+  clientes           Cliente[]
+  servicos           Servico[]
+}
+
+model Cliente {
+  id                 Int           @id @default(autoincrement())
+  nome               String
+  telefone           String
+  email              String?       @unique
+  aceitaWhatsapp     Boolean       @default(true)
+  statusRelacionamento String      @default("ativo")
+  observacoes        String?
+  origem             String        @default("manual")
+  ultimaVisita       DateTime?
+  totalGasto         Float         @default(0)
+  visitas            Int           @default(0)
+  barbeariaId        Int
+  agendamentos       Agendamento[]
+  barbearia          Barbearia     @relation(fields: [barbeariaId], references: [id])
+}
+
+model Servico {
+  id                 Int           @id @default(autoincrement())
+  nome               String
+  descricao          String?
+  preco              Float
+  duracaoMin         Int
+  barbeariaId        Int
+  ativo              Boolean       @default(true)
+  destaqueLink       Boolean       @default(false)
+  ordemLink          Int           @default(0)
+  depositoAntecipado Float         @default(0)
+  categoria          String        @default("servico")
+  tempoRetornoDias   Int?
+  agendamentos       Agendamento[]
+  barbearia          Barbearia     @relation(fields: [barbeariaId], references: [id])
+}
+
+model Agendamento {
+  id                   Int       @id @default(autoincrement())
+  data                 DateTime
+  status               String    @default("pendente")
+  clienteId            Int
+  barbeariaId          Int
+  createdAt            DateTime  @default(now())
+  updatedAt            DateTime  @updatedAt
+  servicoId            Int
+  valorServico         Float     @default(0)
+  valorReserva         Float     @default(0)
+  statusPagamento      String    @default("pendente")
+  formaPagamentoReserva String?
+  origem               String    @default("manual")
+  compareceu           Boolean?
+  confirmadoWhatsapp   Boolean   @default(false)
+  barbeiroNome         String?
+  observacoes          String?
+  barbearia            Barbearia @relation(fields: [barbeariaId], references: [id])
+  cliente              Cliente   @relation(fields: [clienteId], references: [id])
+  servico              Servico   @relation(fields: [servicoId], references: [id])
+}

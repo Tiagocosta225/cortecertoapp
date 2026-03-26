@@ -1,0 +1,23 @@
+{
+  "name": "cortecertoapp",
+  "private": true,
+  "version": "1.0.0",
+  "packageManager": "pnpm@10.15.1",
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "scripts": {
+    "dev:public-web": "npm run dev -w @cortecerto/public-web",
+    "dev:admin-panel": "npm run dev -w @cortecerto/admin-panel",
+    "dev:landing": "npm run dev -w @cortecerto/landing",
+    "dev:backend": "npm run dev -w @cortecerto/backend",
+    "dev:mobile": "npm run dev -w @cortecerto/mobile",
+    "build": "npm run build --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "check": "npm run check --workspaces --if-present",
+    "compose:up": "docker compose -f infra/docker/docker-compose.yml up --build",
+    "compose:down": "docker compose -f infra/docker/docker-compose.yml down",
+    "compose:logs": "docker compose -f infra/docker/docker-compose.yml logs -f"
+  }
+}

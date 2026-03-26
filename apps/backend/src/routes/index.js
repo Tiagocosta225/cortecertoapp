@@ -1,0 +1,23 @@
+const express = require('express')
+const agendamentosRoutes = require('../modules/agendamentos/routes')
+const barbeariasRoutes = require('../modules/barbearias/routes')
+const clientesRoutes = require('../modules/clientes/routes')
+const servicosRoutes = require('../modules/servicos/routes')
+const publicoRoutes = require('../modules/publico/routes')
+const dashboardRoutes = require('../modules/dashboard/routes')
+const requireAdminApiKey = require('../http/adminAuth')
+
+const router = express.Router()
+
+router.use('/public', publicoRoutes)
+router.use('/Agendamento', requireAdminApiKey, agendamentosRoutes)
+router.use('/Barbearia', requireAdminApiKey, barbeariasRoutes)
+router.use('/Cliente', requireAdminApiKey, clientesRoutes)
+router.use('/Servico', requireAdminApiKey, servicosRoutes)
+router.use('/agendamentos', requireAdminApiKey, agendamentosRoutes)
+router.use('/barbearias', requireAdminApiKey, barbeariasRoutes)
+router.use('/clientes', requireAdminApiKey, clientesRoutes)
+router.use('/servicos', requireAdminApiKey, servicosRoutes)
+router.use('/dashboard', requireAdminApiKey, dashboardRoutes)
+
+module.exports = router

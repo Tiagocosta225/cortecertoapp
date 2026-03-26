@@ -1,0 +1,41 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build output
+dist/
+build/
+.turbo/
+.vite/
+coverage/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# OS / Editors
+.DS_Store
+.idea/
+.vscode/
+
+# Expo / React Native
+.expo/
+android/
+ios/
+
+# Prisma
+apps/backend/prisma/dev.db*
+
+# Runtime
+tmp/
+.cache/
+infra/nginx/certs/*.crt
+infra/nginx/certs/*.key

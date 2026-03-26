@@ -1,0 +1,61 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Barbearia {
+  id                Int           @id @default(autoincrement())
+  nome              String
+  endereco          String
+  telefone          String
+  horarioAbertura   String
+  horarioFechamento String
+  clientes          Cliente[]
+  agendamentos      Agendamento[]
+  servicos          Servico[] // Uma barbearia pode oferecer vários serviços
+}
+
+model Cliente {
+  id           Int           @id @default(autoincrement())
+  nome         String
+  telefone     String
+  email        String?       @unique
+  barbearia    Barbearia     @relation(fields: [barbeariaId], references: [id])
+  barbeariaId  Int
+  agendamentos Agendamento[]
+}
+
+model Servico {
+  id           Int           @id @default(autoincrement())
+  nome         String
+  preco        Float
+  duracaoMin   Int // duração do serviço em minutos
+  barbearia    Barbearia     @relation(fields: [barbeariaId], references: [id])
+  barbeariaId  Int
+  agendamentos Agendamento[] // Agendamentos que envolvem esse serviço
+}
+
+model Agendamento {
+  id          Int       @id @default(autoincrement())
+  data        DateTime
+  status      String    @default("pendente") // pendente, confirmado, cancelado, concluído
+  cliente     Cliente   @relation(fields: [clienteId], references: [id])
+  clienteId   Int
+  barbearia   Barbearia @relation(fields: [barbeariaId], references: [id])
+  barbeariaId Int
+  servico     Servico   @relation(fields: [servicoId], references: [id])
+  servicoId   Int // Cada agendamento está atrelado a um serviço
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+}

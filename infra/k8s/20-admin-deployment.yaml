@@ -1,0 +1,52 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cortecertoapp-admin-panel
+  namespace: cortecerto
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cortecertoapp-admin-panel
+  template:
+    metadata:
+      labels:
+        app: cortecertoapp-admin-panel
+    spec:
+      containers:
+        - name: admin-panel
+          image: ghcr.io/your-org/cortecertoapp-admin-panel:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 3000
+          env:
+            - name: NODE_ENV
+              value: production
+            - name: PORT
+              value: "3000"
+            - name: BACKEND_INTERNAL_URL
+              value: http://cortecertoapp-backend
+            - name: ADMIN_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: backend-secret
+                  key: ADMIN_API_KEY
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "128Mi"
+            limits:
+              cpu: "300m"
+              memory: "384Mi"

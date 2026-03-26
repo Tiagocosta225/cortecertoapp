@@ -1,0 +1,40 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cortecertoapp-public-web
+  namespace: cortecerto
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cortecertoapp-public-web
+  template:
+    metadata:
+      labels:
+        app: cortecertoapp-public-web
+    spec:
+      containers:
+        - name: public-web
+          image: ghcr.io/your-org/cortecertoapp-public-web:latest
+          imagePullPolicy: IfNotPresent
+          ports:
+            - containerPort: 80
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 80
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: "25m"
+              memory: "64Mi"
+            limits:
+              cpu: "200m"
+              memory: "256Mi"

@@ -1,0 +1,26 @@
+name: Test Secrets
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Test secrets access
+        env:
+          SSH_HOST: ${{ secrets.SSH_HOST }}
+          SSH_USERNAME: ${{ secrets.SSH_USERNAME }}
+          SSH_PORT: ${{ secrets.SSH_PORT }}
+        run: |
+          echo "=== TESTE DE SECRETS ==="
+          echo "SSH_HOST: '${SSH_HOST:-<vazio>}'"
+          echo "SSH_USERNAME: '${SSH_USERNAME:-<vazio>}'"
+          echo "SSH_PORT: '${SSH_PORT:-<vazio>}'"
+          if [ -z "$SSH_HOST" ]; then
+            echo "❌ ERRO: SSH_HOST está vazio!"
+            exit 1
+          else
+            echo "✅ SSH_HOST configurado corretamente"
+          fi
