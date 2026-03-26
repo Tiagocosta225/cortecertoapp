@@ -1,0 +1,151 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main, master]
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  validate:
+    name: Validate (Node ${{ matrix.node }})
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        node: [22]
+    env:
+      CI: true
+      DATABASE_URL: postgresql://postgres:postgres@localhost:5432/postgres?schema=public
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+          cache: npm
+          cache-dependency-path: |
+            package-lock.json
+            apps/backend/package-lock.json
+            apps/public-web/package-lock.json
+            apps/landing/package-lock.json
+            apps/admin-panel/package-lock.json
+            apps/mobile/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check
+        run: npm run check
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Build
+        run: npm run build
+
+  docker-deploy:
+    name: Docker Deploy
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 60
+    needs: validate
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push compose images
+        env:
+          REGISTRY: ghcr.io
+          OWNER: ${{ github.repository_owner }}
+          SHA_TAG: ${{ github.sha }}
+          BRANCH_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+
+          short_sha="$(echo "${SHA_TAG}" | cut -c1-12)"
+          branch_tag="$(echo "${BRANCH_TAG}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
+          owner_lc="$(echo "${OWNER}" | tr '[:upper:]' '[:lower:]')"
+
+          docker build -f infra/docker/postgres/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-postgres:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-postgres:${branch_tag}-latest" infra/docker/postgres
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-postgres:${short_sha}"
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-postgres:${branch_tag}-latest"
+
+          docker build -f apps/backend/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-backend:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-backend:${branch_tag}-latest" apps/backend
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-backend:${short_sha}"
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-backend:${branch_tag}-latest"
+
+          docker build -f apps/public-web/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-frontend:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-frontend:${branch_tag}-latest" apps/public-web
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-frontend:${short_sha}"
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-frontend:${branch_tag}-latest"
+
+          docker build -f apps/admin-panel/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-admin-panel:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-admin-panel:${branch_tag}-latest" apps/admin-panel
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-admin-panel:${short_sha}"
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-admin-panel:${branch_tag}-latest"
+
+          docker build -f apps/landing/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-landing:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-landing:${branch_tag}-latest" apps/landing
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-landing:${short_sha}"
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-landing:${branch_tag}-latest"
+
+          docker build -f infra/nginx/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-nginx:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-nginx:${branch_tag}-latest" infra/nginx
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-nginx:${short_sha}"
+          docker push "${REGISTRY}/${owner_lc}/cortecerto-nginx:${branch_tag}-latest"
+
+  deploy-app:
+    name: Deploy Application
+    runs-on: [self-hosted, Linux, X64]
+    timeout-minutes: 30
+    needs: docker-deploy
+    if: github.event_name != 'pull_request'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Login to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Validate deploy env file
+        run: |
+          set -euo pipefail
+          test -f infra/docker/.env
+
+      - name: Pull and deploy with Docker Compose
+        env:
+          IMAGE_REGISTRY: ghcr.io
+          IMAGE_OWNER: ${{ github.repository_owner }}
+          BRANCH_TAG: ${{ github.ref_name }}
+        run: |
+          set -euo pipefail
+          owner_lc="$(echo "${IMAGE_OWNER}" | tr '[:upper:]' '[:lower:]')"
+          branch_tag="$(echo "${BRANCH_TAG}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
+          export IMAGE_OWNER="${owner_lc}"
+          export IMAGE_TAG="${branch_tag}-latest"
+          docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env pull
+          docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env up -d --remove-orphans
+          docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env ps
