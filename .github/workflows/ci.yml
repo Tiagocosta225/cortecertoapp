@@ -166,6 +166,7 @@ jobs:
         env:
           DOCKER_CLIENT_TIMEOUT: "300"
           COMPOSE_HTTP_TIMEOUT: "300"
+          COMPOSE_PROJECT_NAME: cortecerto
           IMAGE_REGISTRY: ghcr.io
           IMAGE_OWNER: ${{ github.repository_owner }}
           BRANCH_TAG: ${{ github.ref_name }}
@@ -200,5 +201,17 @@ jobs:
           fi
 
           retry 4 sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env pull"
+          sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env down --remove-orphans || true"
           sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env up -d --remove-orphans"
           sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env ps"
+
+      - name: Diagnose port conflicts (80/443)
+        if: failure()
+        run: |
+          set +e
+          echo "Processes using port 80:"
+          ss -ltnp | grep ':80 ' || true
+          echo "Processes using port 443:"
+          ss -ltnp | grep ':443 ' || true
+          echo "Running containers publishing ports:"
+          docker ps --format 'table {{.Names}}\t{{.Ports}}'
