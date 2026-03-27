@@ -85,33 +85,48 @@ jobs:
         run: |
           set -euo pipefail
 
+          retry() {
+            local max_attempts="$1"
+            shift
+            local attempt=1
+            until "$@"; do
+              if [ "${attempt}" -ge "${max_attempts}" ]; then
+                echo "Command failed after ${attempt} attempts: $*"
+                return 1
+              fi
+              echo "Attempt ${attempt}/${max_attempts} failed. Retrying in $(( attempt * 10 ))s..."
+              sleep $(( attempt * 10 ))
+              attempt=$(( attempt + 1 ))
+            done
+          }
+
           short_sha="$(echo "${SHA_TAG}" | cut -c1-12)"
           branch_tag="$(echo "${BRANCH_TAG}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
           owner_lc="$(echo "${OWNER}" | tr '[:upper:]' '[:lower:]')"
 
           docker build -f infra/docker/postgres/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-postgres:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-postgres:${branch_tag}-latest" infra/docker/postgres
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-postgres:${short_sha}"
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-postgres:${branch_tag}-latest"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-postgres:${short_sha}"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-postgres:${branch_tag}-latest"
 
           docker build -f apps/backend/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-backend:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-backend:${branch_tag}-latest" apps/backend
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-backend:${short_sha}"
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-backend:${branch_tag}-latest"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-backend:${short_sha}"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-backend:${branch_tag}-latest"
 
           docker build -f apps/public-web/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-frontend:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-frontend:${branch_tag}-latest" apps/public-web
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-frontend:${short_sha}"
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-frontend:${branch_tag}-latest"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-frontend:${short_sha}"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-frontend:${branch_tag}-latest"
 
           docker build -f apps/admin-panel/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-admin-panel:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-admin-panel:${branch_tag}-latest" apps/admin-panel
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-admin-panel:${short_sha}"
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-admin-panel:${branch_tag}-latest"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-admin-panel:${short_sha}"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-admin-panel:${branch_tag}-latest"
 
           docker build -f apps/landing/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-landing:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-landing:${branch_tag}-latest" apps/landing
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-landing:${short_sha}"
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-landing:${branch_tag}-latest"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-landing:${short_sha}"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-landing:${branch_tag}-latest"
 
           docker build -f infra/nginx/Dockerfile -t "${REGISTRY}/${owner_lc}/cortecerto-nginx:${short_sha}" -t "${REGISTRY}/${owner_lc}/cortecerto-nginx:${branch_tag}-latest" infra/nginx
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-nginx:${short_sha}"
-          docker push "${REGISTRY}/${owner_lc}/cortecerto-nginx:${branch_tag}-latest"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-nginx:${short_sha}"
+          retry 4 docker push "${REGISTRY}/${owner_lc}/cortecerto-nginx:${branch_tag}-latest"
 
   deploy-app:
     name: Deploy Application
@@ -149,15 +164,31 @@ jobs:
 
       - name: Pull and deploy with Docker Compose
         env:
+          DOCKER_CLIENT_TIMEOUT: "300"
+          COMPOSE_HTTP_TIMEOUT: "300"
           IMAGE_REGISTRY: ghcr.io
           IMAGE_OWNER: ${{ github.repository_owner }}
           BRANCH_TAG: ${{ github.ref_name }}
         run: |
           set -euo pipefail
+          retry() {
+            local max_attempts="$1"
+            shift
+            local attempt=1
+            until "$@"; do
+              if [ "${attempt}" -ge "${max_attempts}" ]; then
+                echo "Command failed after ${attempt} attempts: $*"
+                return 1
+              fi
+              echo "Attempt ${attempt}/${max_attempts} failed. Retrying in $(( attempt * 10 ))s..."
+              sleep $(( attempt * 10 ))
+              attempt=$(( attempt + 1 ))
+            done
+          }
           owner_lc="$(echo "${IMAGE_OWNER}" | tr '[:upper:]' '[:lower:]')"
           branch_tag="$(echo "${BRANCH_TAG}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
           export IMAGE_OWNER="${owner_lc}"
           export IMAGE_TAG="${branch_tag}-latest"
-          docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env pull
+          retry 4 docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env pull
           docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env up -d --remove-orphans
           docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env ps
