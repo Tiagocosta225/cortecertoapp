@@ -202,6 +202,7 @@ jobs:
 
           retry 4 sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env pull"
           sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env down --remove-orphans || true"
+          docker rm -f cortecerto_postgres >/dev/null 2>&1 || true
           sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env up -d --remove-orphans"
           sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env ps"
 
