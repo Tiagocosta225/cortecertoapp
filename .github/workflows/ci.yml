@@ -130,10 +130,22 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Validate deploy env file
+      - name: Prepare deploy env file
+        env:
+          DEPLOY_DOCKER_ENV: ${{ secrets.DEPLOY_DOCKER_ENV }}
         run: |
           set -euo pipefail
-          test -f infra/docker/.env
+          if [ -n "${DEPLOY_DOCKER_ENV}" ]; then
+            printf "%s\n" "${DEPLOY_DOCKER_ENV}" > infra/docker/.env
+          elif [ -f infra/docker/.env ]; then
+            echo "Using existing infra/docker/.env from runner workspace."
+          elif [ -f infra/docker/.env.homolog.example ]; then
+            cp infra/docker/.env.homolog.example infra/docker/.env
+            echo "::warning::DEPLOY_DOCKER_ENV secret not set. Using infra/docker/.env.homolog.example as fallback."
+          else
+            echo "::error::No deploy env found. Set DEPLOY_DOCKER_ENV secret or provide infra/docker/.env on runner."
+            exit 1
+          fi
 
       - name: Pull and deploy with Docker Compose
         env:
