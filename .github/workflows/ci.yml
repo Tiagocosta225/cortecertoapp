@@ -189,6 +189,16 @@ jobs:
           branch_tag="$(echo "${BRANCH_TAG}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
           export IMAGE_OWNER="${owner_lc}"
           export IMAGE_TAG="${branch_tag}-latest"
-          retry 4 docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env pull
-          docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env up -d --remove-orphans
-          docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env ps
+
+          if docker compose version >/dev/null 2>&1; then
+            compose_cmd="docker compose"
+          elif command -v docker-compose >/dev/null 2>&1; then
+            compose_cmd="docker-compose"
+          else
+            echo "::error::Neither 'docker compose' nor 'docker-compose' is available on runner."
+            exit 1
+          fi
+
+          retry 4 sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env pull"
+          sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env up -d --remove-orphans"
+          sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env ps"
