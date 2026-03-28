@@ -162,6 +162,16 @@ jobs:
             exit 1
           fi
 
+          if ! grep -q '^HTTP_PORT=' infra/docker/.env; then
+            printf '\nHTTP_PORT=8080\n' >> infra/docker/.env
+            echo "Defaulted HTTP_PORT to 8080 for CI deploy."
+          fi
+
+          if ! grep -q '^HTTPS_PORT=' infra/docker/.env; then
+            printf 'HTTPS_PORT=8443\n' >> infra/docker/.env
+            echo "Defaulted HTTPS_PORT to 8443 for CI deploy."
+          fi
+
       - name: Pull and deploy with Docker Compose
         env:
           DOCKER_CLIENT_TIMEOUT: "300"
@@ -190,10 +200,6 @@ jobs:
           branch_tag="$(echo "${BRANCH_TAG}" | tr '[:upper:]' '[:lower:]' | tr '/' '-')"
           export IMAGE_OWNER="${owner_lc}"
           export IMAGE_TAG="${branch_tag}-latest"
-          http_port="$(grep -E '^HTTP_PORT=' infra/docker/.env | tail -n1 | cut -d= -f2- || true)"
-          https_port="$(grep -E '^HTTPS_PORT=' infra/docker/.env | tail -n1 | cut -d= -f2- || true)"
-          http_port="${http_port:-80}"
-          https_port="${https_port:-443}"
 
           if docker compose version >/dev/null 2>&1; then
             compose_cmd="docker compose"
@@ -204,28 +210,9 @@ jobs:
             exit 1
           fi
 
-          cleanup_port_conflicts() {
-            local port="$1"
-            local container_id
-            local container_name
-
-            for container_id in $(docker ps -q --filter "publish=${port}"); do
-              container_name="$(docker inspect --format '{{.Name}}' "${container_id}" | sed 's#^/##')"
-
-              if [[ "${container_name}" == cortecerto_* ]]; then
-                echo "Removing previous CorteCerto container publishing port ${port}: ${container_name}"
-                docker rm -f "${container_id}" >/dev/null 2>&1 || true
-              else
-                echo "::warning::Port ${port} is in use by non-CorteCerto container '${container_name}'. Skipping automatic removal."
-              fi
-            done
-          }
-
           retry 4 sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env pull"
           sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env down --remove-orphans || true"
           docker rm -f cortecerto_postgres >/dev/null 2>&1 || true
-          cleanup_port_conflicts "${http_port}"
-          cleanup_port_conflicts "${https_port}"
           sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env up -d --remove-orphans"
           sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env ps"
 
