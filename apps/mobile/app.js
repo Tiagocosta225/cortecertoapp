@@ -1,6 +1,6 @@
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import BarberScheduleScreen from './screens/BarberScheduleScreen';
+import BarberSchedulerScreen from './screens/BarberSchedulerScreen';
 import ClientBookingScreen from './screens/ClientBookingScreen';
 import LoginScreen from './screens/LoginScreen';
 
@@ -12,7 +12,7 @@ export default function App() {
       <Stack.Navigator initialRouteName="Login" screenOptions={{ headerShown: false }}>
         <Stack.Screen name="Login" component={LoginScreen} />
         <Stack.Screen name="Agendamento" component={ClientBookingScreen} />
-        <Stack.Screen name="AgendaBarbeiro" component={BarberScheduleScreen} />
+        <Stack.Screen name="AgendaBarbeiro" component={BarberSchedulerScreen} />
       </Stack.Navigator>
     </NavigationContainer>
   );

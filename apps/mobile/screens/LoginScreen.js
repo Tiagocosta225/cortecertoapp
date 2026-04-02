@@ -7,13 +7,17 @@ export default function LoginScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <Image
-        source={require('../assets/images/login_screen_pt.png')}
-        style={styles.loginImg}
-      />
-      <Text style={styles.titulo}>Entrar no CorteCerto</Text>
+      <View style={styles.heroCard}>
+        <Image
+          source={require('../assets/images/logo-cortecertoapp.png')}
+          style={styles.loginImg}
+        />
+        <Text style={styles.titulo}>Entrar no CorteCerto</Text>
+        <Text style={styles.subtitulo}>Sua barbearia organizada, clientes sempre no horário.</Text>
+      </View>
       <TextInput
         placeholder="E-mail"
+        placeholderTextColor="#64748B"
         style={styles.input}
         value={email}
         onChangeText={setEmail}
@@ -22,6 +26,7 @@ export default function LoginScreen({ navigation }) {
       />
       <TextInput
         placeholder="Senha"
+        placeholderTextColor="#64748B"
         style={styles.input}
         value={senha}
         onChangeText={setSenha}
@@ -38,9 +43,29 @@ export default function LoginScreen({ navigation }) {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff' },
-  loginImg: { width: 250, height: 180, marginBottom: 24, resizeMode: 'contain' },
-  titulo: { fontSize: 24, marginBottom: 24, fontWeight: 'bold' },
-  input: { width: '80%', borderWidth: 1, borderColor: '#eee', borderRadius: 8, padding: 12, marginVertical: 8 },
-  btnLogin: { marginTop: 20, backgroundColor: '#2263de', padding: 14, borderRadius: 8, width: '80%', alignItems: 'center' },
+  container: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#F8FAFC',
+    padding: 24,
+  },
+  heroCard: {
+    width: '100%',
+    alignItems: 'center',
+    marginBottom: 18,
+  },
+  loginImg: { width: 250, height: 160, marginBottom: 18, resizeMode: 'contain' },
+  titulo: { fontSize: 28, marginBottom: 10, fontWeight: '800', color: '#1A1A1A' },
+  subtitulo: { fontSize: 15, marginBottom: 20, color: '#64748B', textAlign: 'center', lineHeight: 22 },
+  input: {
+    width: '100%',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    borderRadius: 10,
+    padding: 14,
+    marginVertical: 8,
+    backgroundColor: '#FFFFFF',
+  },
+  btnLogin: { marginTop: 20, backgroundColor: '#0066FF', padding: 15, borderRadius: 10, width: '100%', alignItems: 'center' },
 });

@@ -15,18 +15,19 @@ export default function BarberSchedulerScreen() {
   return (
     <View style={styles.container}>
       <Image
-        source={require('../assets/images/agenda_barbeiro.png')}
+        source={require('../assets/images/logo-cortecertoapp.png')}
         style={styles.image}
         resizeMode="contain"
       />
       <Text style={styles.title}>Agenda do Barbeiro</Text>
+      <Text style={styles.subtitle}>Visual moderno, rápido e consistente com o CorteCertoApp.</Text>
       <FlatList
         data={agenda}
         keyExtractor={item => item.id}
         renderItem={({ item }) => (
           <View style={[styles.item, item.reservado && styles.reservado]}>
             <Text style={styles.hora}>{item.hora}</Text>
-            <Text style={{ color: item.reservado ? '#F00' : '#090' }}>
+            <Text style={{ color: item.reservado ? '#DC2626' : '#0066FF', fontWeight: '600' }}>
               {item.reservado ? 'Reservado' : 'Disponível'}
             </Text>
           </View>
@@ -44,18 +45,25 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 24,
-    backgroundColor: '#fff',
+    backgroundColor: '#F8FAFC',
     alignItems: 'center',
   },
   image: {
-    width: 160,
-    height: 160,
-    marginBottom: 24,
+    width: 180,
+    height: 90,
+    marginBottom: 20,
   },
   title: {
-    fontSize: 22,
-    fontWeight: 'bold',
+    fontSize: 24,
+    fontWeight: '800',
+    marginBottom: 8,
+    color: '#1A1A1A',
+  },
+  subtitle: {
+    fontSize: 14,
+    color: '#64748B',
     marginBottom: 20,
+    textAlign: 'center',
   },
   list: {
     width: '100%',
@@ -64,22 +72,26 @@ const styles = StyleSheet.create({
   item: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    backgroundColor: '#EEE',
+    backgroundColor: '#FFFFFF',
     padding: 14,
     marginVertical: 4,
-    borderRadius: 7,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
   },
   reservado: {
-    backgroundColor: '#FFD6D6',
+    backgroundColor: '#EEF4FF',
+    borderColor: '#0066FF',
   },
   hora: {
     fontSize: 18,
     fontWeight: 'bold',
+    color: '#1A1A1A',
   },
   button: {
-    backgroundColor: '#2A4AA2',
+    backgroundColor: '#0066FF',
     padding: 15,
-    borderRadius: 8,
+    borderRadius: 10,
     width: '100%',
     alignItems: 'center',
   },
