@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import logo from './assets/logo-cortecertoapp.png'
 import './App.css'
 
 function App() {
@@ -20,10 +21,7 @@ function App() {
       <header className="header">
         <div className="container">
           <div className="logo-container">
-            <div className="logo-badge" aria-label="CorteCertoApp">
-              <span className="logo-mark">C</span>
-              <span className="logo-text">CorteCerto</span>
-            </div>
+            <img src={logo} alt="CorteCertoApp" className="logo-img" />
           </div>
           <nav className="nav">
             <a href="#features">Recursos</a>
@@ -50,26 +48,7 @@ function App() {
             </div>
           </div>
           <div className="hero-image">
-            <div className="hero-card">
-              <div className="hero-card-header">
-                <span className="status-dot"></span>
-                Agenda protegida
-              </div>
-              <div className="hero-card-body">
-                <div>
-                  <strong>09:00</strong>
-                  <span>Corte classico</span>
-                </div>
-                <div>
-                  <strong>11:00</strong>
-                  <span>Horario premium</span>
-                </div>
-                <div>
-                  <strong>14:30</strong>
-                  <span>Reserva confirmada via Pix</span>
-                </div>
-              </div>
-            </div>
+            <img src={logo} alt="CorteCertoApp Hero" className="hero-img" />
           </div>
         </div>
       </section>

@@ -1,105 +1,183 @@
 import { DashboardLayout } from "@/components/DashboardLayout";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Crown, MessageCircle, Search, TrendingUp, Users } from "lucide-react";
-
-const segments = [
-  { label: "Mais gastam", value: "18 clientes", detail: "respondem por 41% da receita" },
-  { label: "Mais voltam", value: "26 clientes", detail: "media de retorno em 16 dias" },
-  { label: "Em risco", value: "9 clientes", detail: "passaram da janela ideal" },
-];
-
-const clients = [
-  { name: "Rafael Moraes", tag: "VIP", visits: 18, spent: "R$ 1.820", returnWindow: "volta a cada 14 dias", action: "Ofertar combo premium" },
-  { name: "Carlos Neri", tag: "Reativado", visits: 9, spent: "R$ 620", returnWindow: "voltou apos 24 dias", action: "Fixar recorrencia" },
-  { name: "Mateus Prado", tag: "Upsell", visits: 12, spent: "R$ 1.040", returnWindow: "aceita upgrade no caixa", action: "Empurrar plano mensal" },
-  { name: "Lucas Vale", tag: "Sumido", visits: 7, spent: "R$ 390", returnWindow: "22 dias sem vir", action: "Disparar WhatsApp" },
-];
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Search, Plus, MoreVertical, Phone, Mail, Calendar } from "lucide-react";
 
 export default function Clientes() {
+  const clients = [
+    {
+      id: 1,
+      name: "John Carter",
+      email: "john@example.com",
+      phone: "(555) 123-4567",
+      lastVisit: "2024-04-15",
+      totalSpent: "$450",
+      visits: 12,
+    },
+    {
+      id: 2,
+      name: "Michael Smith",
+      email: "michael@example.com",
+      phone: "(555) 234-5678",
+      lastVisit: "2024-04-14",
+      totalSpent: "$320",
+      visits: 8,
+    },
+    {
+      id: 3,
+      name: "Alex Johnson",
+      email: "alex@example.com",
+      phone: "(555) 345-6789",
+      lastVisit: "2024-04-13",
+      totalSpent: "$280",
+      visits: 7,
+    },
+    {
+      id: 4,
+      name: "David Lee",
+      email: "david@example.com",
+      phone: "(555) 456-7890",
+      lastVisit: "2024-04-12",
+      totalSpent: "$520",
+      visits: 15,
+    },
+    {
+      id: 5,
+      name: "Ryan Harris",
+      email: "ryan@example.com",
+      phone: "(555) 567-8901",
+      lastVisit: "2024-04-11",
+      totalSpent: "$180",
+      visits: 4,
+    },
+    {
+      id: 6,
+      name: "Chris Brown",
+      email: "chris@example.com",
+      phone: "(555) 678-9012",
+      lastVisit: "2024-04-10",
+      totalSpent: "$650",
+      visits: 18,
+    },
+  ];
+
   return (
     <DashboardLayout>
-      <div className="space-y-6 p-4 md:p-6">
-        <section className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
+      <div className="p-6 space-y-6">
+        {/* Header */}
+        <div className="flex items-center justify-between">
           <div>
-            <Badge variant="outline" className="rounded-full border-[#b84f1f]/20 bg-white/70 text-[#b84f1f]">
-              CRM simples e acionavel
-            </Badge>
-            <h1 className="mt-3 text-3xl font-semibold tracking-[-0.04em] text-[#1f1813] md:text-5xl">
-              Quem mais volta e quem precisa ser puxado de volta.
-            </h1>
+            <h1 className="text-3xl font-bold text-slate-900">Clientes</h1>
+            <p className="text-slate-600 mt-1">Gerencie todos os seus clientes</p>
           </div>
-          <Button className="rounded-2xl bg-[linear-gradient(135deg,#d46a30,#b84f1f)] text-white">
-            <MessageCircle className="mr-2 h-4 w-4" />
-            Chamar cliente que sumiu
+          <Button className="bg-blue-600 hover:bg-blue-700 flex items-center gap-2">
+            <Plus className="w-4 h-4" />
+            Novo Cliente
           </Button>
-        </section>
+        </div>
 
-        <Card className="border-black/8 bg-[rgba(255,250,244,0.82)] p-4">
-          <div className="flex flex-col gap-4 lg:flex-row">
-            <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8a7362]" />
+        {/* Filters and Search */}
+        <Card className="p-4">
+          <div className="flex flex-col md:flex-row gap-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
               <Input
-                placeholder="Buscar por nome, WhatsApp ou comportamento de retorno..."
-                className="h-11 rounded-2xl border-black/8 bg-white/72 pl-10"
+                placeholder="Buscar por nome, email ou telefone..."
+                className="pl-10 bg-slate-50 border-slate-200"
               />
             </div>
-            <Button variant="outline" className="rounded-2xl border-black/8 bg-white/72">
-              <Users className="mr-2 h-4 w-4" />
-              Segmentos automaticos
-            </Button>
+            <Button variant="outline">Filtros</Button>
+            <Button variant="outline">Exportar</Button>
           </div>
         </Card>
 
-        <section className="grid gap-4 md:grid-cols-3">
-          {segments.map((segment) => (
-            <Card key={segment.label} className="border-black/8 bg-[rgba(255,250,244,0.82)] p-5">
-              <p className="text-sm text-[#6b5a4d]">{segment.label}</p>
-              <p className="mt-2 text-3xl font-semibold tracking-[-0.05em] text-[#1f1813]">{segment.value}</p>
-              <p className="mt-2 text-sm text-[#8a7362]">{segment.detail}</p>
-            </Card>
-          ))}
-        </section>
+        {/* Clients Table */}
+        <Card className="p-6">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-slate-200">
+                <TableHead className="text-slate-700">Nome</TableHead>
+                <TableHead className="text-slate-700">Contato</TableHead>
+                <TableHead className="text-slate-700">Última Visita</TableHead>
+                <TableHead className="text-slate-700">Visitas</TableHead>
+                <TableHead className="text-slate-700">Total Gasto</TableHead>
+                <TableHead className="text-right text-slate-700">Ações</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {clients.map((client) => (
+                <TableRow key={client.id} className="border-slate-200 hover:bg-slate-50">
+                  <TableCell className="font-medium text-slate-900">{client.name}</TableCell>
+                  <TableCell>
+                    <div className="space-y-1">
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Mail className="w-4 h-4 text-slate-400" />
+                        {client.email}
+                      </div>
+                      <div className="flex items-center gap-2 text-sm text-slate-600">
+                        <Phone className="w-4 h-4 text-slate-400" />
+                        {client.phone}
+                      </div>
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex items-center gap-2 text-sm text-slate-600">
+                      <Calendar className="w-4 h-4 text-slate-400" />
+                      {new Date(client.lastVisit).toLocaleDateString("pt-BR")}
+                    </div>
+                  </TableCell>
+                  <TableCell>
+                    <span className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-100 text-blue-700 font-semibold text-sm">
+                      {client.visits}
+                    </span>
+                  </TableCell>
+                  <TableCell className="font-semibold text-slate-900">{client.totalSpent}</TableCell>
+                  <TableCell className="text-right">
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon">
+                          <MoreVertical className="w-4 h-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>Ver Perfil</DropdownMenuItem>
+                        <DropdownMenuItem>Editar</DropdownMenuItem>
+                        <DropdownMenuItem>Histórico</DropdownMenuItem>
+                        <DropdownMenuItem className="text-red-600">Bloquear</DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
 
-        <Card className="border-black/8 bg-[rgba(255,250,244,0.82)] p-6">
-          <div className="space-y-4">
-            {clients.map((client) => (
-              <div
-                key={client.name}
-                className="grid gap-4 rounded-[1.6rem] border border-black/8 bg-white/72 p-4 xl:grid-cols-[1.2fr_0.8fr_0.6fr_0.8fr_auto]"
-              >
-                <div>
-                  <div className="flex items-center gap-3">
-                    <p className="font-semibold text-[#1f1813]">{client.name}</p>
-                    <Badge className="rounded-full bg-[#24423a]/10 text-[#24423a] hover:bg-[#24423a]/10">
-                      {client.tag === "VIP" ? <Crown className="mr-1 h-3.5 w-3.5" /> : null}
-                      {client.tag}
-                    </Badge>
-                  </div>
-                  <p className="mt-2 text-sm text-[#6b5a4d]">{client.returnWindow}</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-[#8a7362]">Visitas</p>
-                  <p className="mt-2 text-lg font-semibold text-[#1f1813]">{client.visits}</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-[#8a7362]">Total gasto</p>
-                  <p className="mt-2 text-lg font-semibold text-[#1f1813]">{client.spent}</p>
-                </div>
-                <div>
-                  <p className="text-xs uppercase tracking-[0.16em] text-[#8a7362]">Proxima acao</p>
-                  <p className="mt-2 text-sm text-[#6b5a4d]">{client.action}</p>
-                </div>
-                <div className="flex items-center">
-                  <Button variant="outline" className="rounded-2xl border-black/8 bg-white">
-                    <TrendingUp className="mr-2 h-4 w-4" />
-                    Acionar
-                  </Button>
-                </div>
-              </div>
-            ))}
+          {/* Pagination */}
+          <div className="flex items-center justify-between mt-6 pt-6 border-t border-slate-200">
+            <p className="text-sm text-slate-600">Mostrando 1 a 6 de 24 clientes</p>
+            <div className="flex gap-2">
+              <Button variant="outline" size="sm">
+                Anterior
+              </Button>
+              <Button variant="outline" size="sm">
+                Próxima
+              </Button>
+            </div>
           </div>
         </Card>
       </div>

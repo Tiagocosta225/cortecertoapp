@@ -1,39 +1,58 @@
-import { Bell, Link2, MessageCircle, Search, TrendingUp } from "lucide-react";
+import { Bell, Search, User, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Badge } from "@/components/ui/badge";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 export function Header() {
   return (
-    <header className="border-b border-black/8 bg-[rgba(255,250,244,0.78)] px-4 py-4 backdrop-blur md:px-6">
-      <div className="flex flex-col gap-4 xl:flex-row xl:items-center xl:justify-between">
-        <div className="flex flex-1 items-center gap-3">
-          <div className="relative max-w-xl flex-1">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-[#8c7768]" />
-            <Input
-              placeholder="Buscar cliente, horario premium ou campanha..."
-              className="h-11 rounded-2xl border-black/8 bg-white/70 pl-10"
-            />
-          </div>
-          <Button variant="outline" className="hidden rounded-2xl border-black/8 bg-white/65 lg:inline-flex">
-            <Link2 className="mr-2 h-4 w-4" />
-            Copiar link publico
-          </Button>
+    <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+      {/* Search Bar */}
+      <div className="flex-1 max-w-md">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <Input
+            placeholder="Buscar agendamentos, clientes..."
+            className="pl-10 bg-slate-50 border-slate-200"
+          />
         </div>
+      </div>
 
-        <div className="flex flex-wrap items-center gap-3">
-          <Badge className="rounded-full bg-[rgba(36,66,58,0.12)] px-3 py-1 text-[#24423a] hover:bg-[rgba(36,66,58,0.12)]">
-            <TrendingUp className="mr-1 h-3.5 w-3.5" />
-            +18% na receita em 7 dias
-          </Badge>
-          <Button variant="outline" className="rounded-2xl border-black/8 bg-white/65">
-            <MessageCircle className="mr-2 h-4 w-4" />
-            Chamar clientes sumidos
-          </Button>
-          <Button variant="ghost" size="icon" className="rounded-2xl text-[#5c4a3d]">
-            <Bell className="h-5 w-5" />
-          </Button>
-        </div>
+      {/* Right Section */}
+      <div className="flex items-center gap-4 ml-auto">
+        {/* Notifications */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="relative text-slate-600 hover:text-slate-900"
+        >
+          <Bell className="w-5 h-5" />
+          <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+        </Button>
+
+        {/* User Menu */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" className="flex items-center gap-2 text-slate-700">
+              <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white">
+                <User className="w-4 h-4" />
+              </div>
+              <span className="text-sm font-medium">João Silva</span>
+              <ChevronDown className="w-4 h-4 text-slate-400" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-48">
+            <DropdownMenuItem>Meu Perfil</DropdownMenuItem>
+            <DropdownMenuItem>Configurações</DropdownMenuItem>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem className="text-red-600">Sair</DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   );

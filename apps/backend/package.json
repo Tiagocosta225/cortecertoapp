@@ -6,6 +6,7 @@
     "generate": "prisma generate",
     "build": "npm run generate",
     "check": "node --check src/app.js && DATABASE_URL='postgresql://postgres:postgres@localhost:5432/postgres?schema=public' npx prisma validate",
+    "seed": "node prisma/seed.js",
     "start": "prisma migrate deploy && prisma generate && node src/app.js",
     "dev": "nodemon src/app.js"
   },
@@ -23,5 +24,8 @@
   "devDependencies": {
     "nodemon": "^3.1.10",
     "prisma": "^6.13.0"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   }
 }
