@@ -72,11 +72,11 @@ Use os arquivos `.env.example` como base.
 
 - `infra/docker/.env` controla banco, porta publicada do proxy e hostnames roteados pelo Nginx
 - `ADMIN_API_KEY`, `ALLOWED_ORIGINS` e `TRUST_PROXY` precisam estar definidos no `.env` do compose
-- `HTTP_PORT` e `HTTPS_PORT` publicam o proxy Nginx no host
+- `HTTP_PORT` publica o proxy Nginx no host
 - `FRONTEND_HOST`, `ADMIN_HOST` e `LANDING_HOST` definem os `server_name` do Nginx
 - o backend aplica `prisma migrate deploy` no startup do container
-- coloque o certificado Cloudflare Origin em `infra/nginx/certs/origin.crt` e a chave em `infra/nginx/certs/origin.key`
-- com Cloudflare, use SSL mode `Full (strict)` depois de instalar o certificado no origin
+- o `nginx` da stack escuta apenas na porta `80` e faz o roteamento interno para `frontend`, `admin-panel`, `landing` e `backend`
+- se a origem estiver atras da Cloudflare, a terminacao TLS deve acontecer na borda da Cloudflare e o trafego ate o origin segue em HTTP
 
 ## Homologacao
 
