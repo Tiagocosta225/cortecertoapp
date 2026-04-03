@@ -2,228 +2,382 @@ import { useState } from 'react'
 import logo from './assets/logo-cortecertoapp.png'
 import './App.css'
 
+const metrics = [
+  { value: '1 link', label: 'para cada barbearia lotar a agenda com mais ordem' },
+  { value: '24h', label: 'de reserva aberta enquanto você está atendendo' },
+  { value: 'Pix + WhatsApp', label: 'para confirmar rápido e girar melhor a cadeira' },
+]
+
+const salesTriggers = [
+  {
+    eyebrow: 'Mais previsibilidade',
+    title: 'Menos conversa espalhada e mais horário fechado com rapidez.',
+    description:
+      'O cliente já entra vendo serviço, duração, sinal e horários livres. Isso reduz pergunta repetida e acelera o fechamento do agendamento.',
+  },
+  {
+    eyebrow: 'Mais valor percebido',
+    title: 'Sua barbearia passa mais confiança sem perder a pegada popular.',
+    description:
+      'A página pública funciona como uma vitrine forte para Instagram, Google e WhatsApp, ajudando a vender melhor o horário e a manter o movimento.',
+  },
+  {
+    eyebrow: 'Menos faltas',
+    title: 'Reserva antecipada para proteger os horários de pico.',
+    description:
+      'Quando fizer sentido, a cobrança de sinal por Pix filtra curiosos, melhora compromisso e protege os horários mais valiosos do dia.',
+  },
+]
+
+const steps = [
+  'Você divulga um único link da barbearia nas redes, na bio, no balcão e no WhatsApp.',
+  'O cliente escolhe serviço, dia e horário sem ficar perguntando tudo no chat.',
+  'O agendamento entra mais redondo e ainda pode seguir para confirmação direta no WhatsApp.',
+]
+
+const features = [
+  'Página pública com logo, serviços, preço e horários da barbearia',
+  'Agendamento por link único sem cadastro complicado para o cliente',
+  'Sinal de reserva para horários de pico ou serviços mais disputados',
+  'Fluxo pensado para mobile, Instagram, QR Code e compartilhamento rápido',
+  'Mais clareza para vender corte, barba e combos antes da conversa',
+  'Contato direto com a barbearia quando precisar confirmar ou ajustar',
+]
+
+const objections = [
+  {
+    title: '“Meu cliente prefere WhatsApp”',
+    description:
+      'Ótimo. O link público não substitui o WhatsApp, ele só faz o cliente chegar no chat mais decidido e com menos dúvida básica.',
+  },
+  {
+    title: '“Tenho medo de sistema complicado”',
+    description:
+      'A proposta é justamente o contrário: menos enrolação, menos tela demais e um fluxo direto para a rotina corrida da barbearia.',
+  },
+  {
+    title: '“Quero lotar a agenda sem perder agilidade”',
+    description:
+      'O design da página pública ajuda a passar confiança, vender melhor o horário e manter o alto giro com mais organização.',
+  },
+]
+
+const pricing = [
+  {
+    badge: 'Mais escolhido',
+    name: 'Plano mensal',
+    price: '29,90',
+    description: 'Para manter a agenda da barbearia organizada o mês inteiro.',
+    items: [
+      'Link público da barbearia',
+      'Serviços com preço, duração e sinal',
+      'Agenda online para encaixar mais cliente',
+      'Contato rápido com o cliente',
+    ],
+    featured: false,
+  },
+  {
+    badge: 'Oferta de entrada',
+    name: 'Primeiro mês',
+    price: '9,90',
+    description: 'Baixa barreira para testar e sentir a agenda girando melhor na prática.',
+    items: [
+      'Tudo do plano mensal',
+      'Primeiro mês com preço promocional',
+      'Sem implantação demorada',
+      'Cancele quando quiser',
+    ],
+    featured: true,
+  },
+  {
+    badge: 'Teste inicial',
+    name: '7 dias grátis',
+    price: '0',
+    description: 'Comece com risco zero e valide o link único no dia a dia da barbearia.',
+    items: [
+      'Acesso completo',
+      'Sem cartão de crédito',
+      'Perfeito para validar com sua equipe e seus clientes',
+      'Migração simples para o plano pago',
+    ],
+    featured: false,
+  },
+]
+
 function App() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
 
-  const handleSubmit = (e) => {
-    e.preventDefault()
-    if (email) {
-      setSubmitted(true)
-      setEmail('')
-      setTimeout(() => setSubmitted(false), 3000)
-    }
+  const handleSubmit = (event) => {
+    event.preventDefault()
+    if (!email) return
+    setSubmitted(true)
+    setEmail('')
+    setTimeout(() => setSubmitted(false), 3000)
   }
 
   return (
     <div className="app">
-      {/* Header */}
       <header className="header">
-        <div className="container">
+        <div className="container header-inner">
           <div className="logo-container">
             <img src={logo} alt="CorteCertoApp" className="logo-img" />
           </div>
           <nav className="nav">
-            <a href="#features">Recursos</a>
-            <a href="#pricing">Preços</a>
-            <a href="#contact">Contato</a>
+            <a href="#beneficios">Benefícios</a>
+            <a href="#como-funciona">Como funciona</a>
+            <a href="#oferta">Oferta</a>
+            <a href="#contato">Contato</a>
           </nav>
         </div>
       </header>
 
-      {/* Hero Section */}
-      <section className="hero">
-        <div className="container hero-content">
-          <div className="hero-text">
-            <h1 className="hero-title">
-              O CorteCerto é a agenda inteligente da sua barbearia
-              <span className="highlight"> Sem complicação mais cortes e menos desencontros!</span>
-            </h1>
-            <p className="hero-subtitle">
-              Sua barbearia organizada, clientes sempre no horário.
-            </p>
-            <div className="cta-buttons">
-              <button className="btn btn-primary">Começar Grátis</button>
-              <button className="btn btn-secondary">Ver Demo</button>
-            </div>
-          </div>
-          <div className="hero-image">
-            <img src={logo} alt="CorteCertoApp Hero" className="hero-img" />
-          </div>
-        </div>
-      </section>
+      <main>
+        <section className="hero">
+          <div className="container hero-grid">
+            <div className="hero-copy">
+              <div className="hero-pill">Agendamento por link único para barbearias</div>
+              <h1 className="hero-title">
+                Transforme seu link em uma vitrine que enche a agenda, acelera o atendimento e reduz conversa repetida.
+              </h1>
+              <p className="hero-subtitle">
+                O CorteCertoApp cria uma página pública para sua barbearia com serviços, horários, sinal por Pix e
+                confirmação rápida. É a solução para barbearia de alto giro que quer mais cliente marcado e menos tempo perdido no WhatsApp.
+              </p>
 
-      {/* Taglines Section */}
-      <section className="taglines">
-        <div className="container">
-          <div className="tagline-grid">
-            <div className="tagline-card">
-              <h3>Chega de sistema complicado.</h3>
-              <p>Agenda simples, cliente marcado, dia organizado.</p>
-            </div>
-            <div className="tagline-card">
-              <h3>Enquanto outros gerenciam empresas,</h3>
-              <p>o Corte Certo organiza sua agenda.</p>
-            </div>
-            <div className="tagline-card">
-              <h3>Menos sistema.</h3>
-              <p>Mais cliente sentado na cadeira.</p>
-            </div>
-            <div className="tagline-card">
-              <h3>Agenda simples</h3>
-              <p>para barbearias reais.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section id="features" className="features">
-        <div className="container">
-          <h2>Por que escolher o Corte Certo?</h2>
-          <div className="features-grid">
-            <div className="feature-card">
-              <div className="feature-icon">📱</div>
-              <h3>App para Clientes</h3>
-              <p>Seus clientes marcam horários direto pelo app, sem ligações.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">📅</div>
-              <h3>Agenda Inteligente</h3>
-              <p>Visualize toda a semana em um só lugar. Simples e prático.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">⏰</div>
-              <h3>Lembretes Automáticos</h3>
-              <p>Clientes recebem lembretes e reduzem faltas em até 60%.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">💰</div>
-              <h3>Gestão de Serviços</h3>
-              <p>Controle preços, duração e disponibilidade de cada serviço.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">📊</div>
-              <h3>Relatórios Simples</h3>
-              <p>Veja quanto você faturou, quantos clientes vieram, tudo claro.</p>
-            </div>
-            <div className="feature-card">
-              <div className="feature-icon">🔒</div>
-              <h3>Seguro e Confiável</h3>
-              <p>Seus dados estão seguros. Acesse de qualquer lugar.</p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Pricing Section */}
-      <section id="pricing" className="pricing">
-        <div className="container">
-          <h2>Preços Simples e Justos</h2>
-          <div className="pricing-grid">
-            <div className="pricing-card">
-              <div className="pricing-badge">Mais Popular</div>
-              <h3>Plano Mensal</h3>
-              <div className="price">
-                <span className="currency">R$</span>
-                <span className="amount">29,90</span>
-                <span className="period">/mês</span>
+              <div className="cta-buttons">
+                <a href="#contato" className="btn btn-primary">
+                  Quero ativar meu link
+                </a>
+                <a href="#como-funciona" className="btn btn-secondary">
+                  Ver como funciona
+                </a>
               </div>
-              <p className="price-description">Após o primeiro mês</p>
-              <ul className="features-list">
-                <li>✓ Agenda ilimitada</li>
-                <li>✓ App para clientes</li>
-                <li>✓ Lembretes automáticos</li>
-                <li>✓ Relatórios básicos</li>
-                <li>✓ Suporte por email</li>
-              </ul>
-              <button className="btn btn-primary">Começar Agora</button>
-            </div>
-            <div className="pricing-card featured">
-              <div className="pricing-badge featured-badge">Melhor Oferta</div>
-              <h3>Primeiro Mês</h3>
-              <div className="price">
-                <span className="currency">R$</span>
-                <span className="amount">9,90</span>
-                <span className="period">/mês</span>
+
+              <div className="metrics-grid">
+                {metrics.map((metric) => (
+                  <div key={metric.label} className="metric-card">
+                    <strong>{metric.value}</strong>
+                    <span>{metric.label}</span>
+                  </div>
+                ))}
               </div>
-              <p className="price-description">Depois R$ 29,90/mês</p>
-              <ul className="features-list">
-                <li>✓ Tudo do plano mensal</li>
-                <li>✓ Desconto especial</li>
-                <li>✓ Sem compromisso</li>
-                <li>✓ Cancele quando quiser</li>
-                <li>✓ Suporte prioritário</li>
-              </ul>
-              <button className="btn btn-primary-featured">Começar Agora</button>
             </div>
-            <div className="pricing-card">
-              <div className="pricing-badge">Teste Grátis</div>
-              <h3>7 Dias Grátis</h3>
-              <div className="price">
-                <span className="currency">R$</span>
-                <span className="amount">0</span>
-                <span className="period">/7 dias</span>
+
+            <div className="hero-panel">
+              <div className="hero-panel-top">
+                <span className="hero-status">Experiência do cliente</span>
+                <span className="hero-live">Ao vivo</span>
               </div>
-              <p className="price-description">Depois R$ 29,90/mês</p>
-              <ul className="features-list">
-                <li>✓ Acesso completo</li>
-                <li>✓ Sem cartão de crédito</li>
-                <li>✓ Teste tudo</li>
-                <li>✓ Cancele a qualquer hora</li>
-                <li>✓ Suporte por email</li>
-              </ul>
-              <button className="btn btn-secondary">Começar Teste</button>
+
+              <div className="hero-panel-card">
+                <p className="panel-label">Link da barbearia</p>
+                <p className="panel-value">cortecerto.app/barbearia-do-joao</p>
+              </div>
+
+              <div className="hero-panel-card">
+                <p className="panel-label">Serviço premium</p>
+                <p className="panel-value">Corte + barba</p>
+                <div className="panel-tags">
+                  <span>45 min</span>
+                  <span>R$ 10 de sinal</span>
+                </div>
+              </div>
+
+              <div className="hero-panel-card">
+                <p className="panel-label">Por que converte melhor</p>
+                <ul className="panel-list">
+                  <li>O cliente entende preço e horário antes de chamar</li>
+                  <li>O agendamento fecha mais rápido nos horários vagos</li>
+                  <li>A confirmação fica mais prática para quem atende muito</li>
+                </ul>
+              </div>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      {/* CTA Section */}
-      <section className="cta-section">
-        <div className="container">
-          <h2>Pronto para organizar sua barbearia?</h2>
-          <p>Comece grátis hoje. Sem cartão de crédito necessário.</p>
-          <form onSubmit={handleSubmit} className="email-form">
-            <input 
-              type="email" 
-              placeholder="Seu email" 
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-            />
-            <button type="submit" className="btn btn-primary">Começar Agora</button>
-          </form>
-          {submitted && <p className="success-message">✓ Verifique seu email!</p>}
-        </div>
-      </section>
+        <section className="dark-section">
+          <div className="container">
+            <div className="section-heading section-heading-light">
+              <p className="eyebrow">Gatilhos de venda</p>
+              <h2>Quando a agenda parece organizada, o cliente decide mais rápido e ocupa o horário com menos resistência.</h2>
+            </div>
 
-      {/* Footer */}
+            <div className="trigger-grid">
+              {salesTriggers.map((item) => (
+                <article key={item.title} className="trigger-card">
+                  <p className="trigger-eyebrow">{item.eyebrow}</p>
+                  <h3>{item.title}</h3>
+                  <p>{item.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="beneficios" className="section light-section">
+          <div className="container">
+            <div className="section-heading">
+              <p className="eyebrow">Benefícios reais</p>
+              <h2>O link único não é só um atalho. Ele vira um canal para lotar a agenda com mais controle.</h2>
+              <p>
+                A proposta é deixar seu cliente com menos dúvida e sua operação com menos improviso. Isso reduz atrito,
+                ajuda a preencher horários mais rápido e melhora o ritmo da barbearia durante o dia.
+              </p>
+            </div>
+
+            <div className="feature-grid">
+              {features.map((item) => (
+                <div key={item} className="feature-card">
+                  <div className="feature-check">✓</div>
+                  <p>{item}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="como-funciona" className="section timeline-section">
+          <div className="container timeline-grid">
+            <div className="timeline-copy">
+              <p className="eyebrow">Como funciona</p>
+              <h2>Uma jornada curta para o cliente. Um ganho grande para a barbearia de movimento forte.</h2>
+              <p>
+                O processo foi pensado para a realidade de quem precisa vender horário sem perder tempo em conversa
+                repetitiva. Você divulga uma vez, e o cliente chega mais pronto para marcar.
+              </p>
+            </div>
+
+            <div className="timeline-list">
+              {steps.map((step, index) => (
+                <div key={step} className="timeline-item">
+                  <div className="timeline-number">0{index + 1}</div>
+                  <p>{step}</p>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="section comparison-section">
+          <div className="container">
+            <div className="section-heading">
+              <p className="eyebrow">Antes e depois</p>
+              <h2>Troque a correria no improviso por uma página que ajuda o cliente a decidir rápido.</h2>
+            </div>
+
+            <div className="comparison-grid">
+              <div className="comparison-card comparison-card-muted">
+                <h3>Sem link único</h3>
+                <ul>
+                  <li>Cliente pergunta preço, duração e horário em mensagens separadas</li>
+                  <li>Horário bom fica parado em conversa sem compromisso</li>
+                  <li>A equipe perde tempo respondendo o mesmo tipo de dúvida o dia todo</li>
+                </ul>
+              </div>
+
+              <div className="comparison-card comparison-card-highlight">
+                <h3>Com CorteCertoApp</h3>
+                <ul>
+                  <li>O cliente já entra vendo serviço, horário e regras da reserva</li>
+                  <li>Seu link parece vitrine pronta para girar atendimento</li>
+                  <li>Você recebe pedidos mais claros, mais rápidos e com mais intenção de compra</li>
+                </ul>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section objections-section">
+          <div className="container">
+            <div className="section-heading">
+              <p className="eyebrow">Objeções comuns</p>
+              <h2>O CorteCerto foi pensado para a rotina corrida da barbearia popular, não para um cenário idealizado.</h2>
+            </div>
+
+            <div className="objection-grid">
+              {objections.map((item) => (
+                <article key={item.title} className="objection-card">
+                  <h3>{item.title}</h3>
+                  <p>{item.description}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="oferta" className="section pricing-section">
+          <div className="container">
+            <div className="section-heading">
+              <p className="eyebrow">Oferta</p>
+              <h2>Escolha uma entrada simples e comece a girar sua agenda com mais organização.</h2>
+              <p>Sem implantação pesada. Sem curva longa. Só um fluxo claro para divulgar, marcar e confirmar.</p>
+            </div>
+
+            <div className="pricing-grid">
+              {pricing.map((plan) => (
+                <article key={plan.name} className={`pricing-card ${plan.featured ? 'featured' : ''}`}>
+                  <span className={`pricing-badge ${plan.featured ? 'featured-badge' : ''}`}>{plan.badge}</span>
+                  <h3>{plan.name}</h3>
+                  <div className="price">
+                    <span className="currency">R$</span>
+                    <span className="amount">{plan.price}</span>
+                    <span className="period">/mês</span>
+                  </div>
+                  <p className="price-description">{plan.description}</p>
+                  <ul className="features-list">
+                    {plan.items.map((item) => (
+                      <li key={item}>✓ {item}</li>
+                    ))}
+                  </ul>
+                  <a href="#contato" className={plan.featured ? 'btn btn-primary-featured' : 'btn btn-primary'}>
+                    Quero começar
+                  </a>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        <section id="contato" className="section cta-section">
+          <div className="container cta-shell">
+            <div className="cta-copy">
+              <p className="eyebrow">Chamada final</p>
+              <h2>Se sua agenda ainda depende de conversa demais, está na hora de vender o horário com mais velocidade.</h2>
+              <p>
+                Ative sua página pública, divulgue um único link e deixe o cliente chegar mais pronto para marcar,
+                ocupar horário e manter sua operação girando melhor.
+              </p>
+            </div>
+
+            <form onSubmit={handleSubmit} className="email-form">
+              <input
+                type="email"
+                placeholder="Seu melhor email"
+                value={email}
+                onChange={(event) => setEmail(event.target.value)}
+                required
+              />
+              <button type="submit" className="btn btn-primary">
+                Quero testar agora
+              </button>
+              {submitted && <p className="success-message">✓ Recebemos seu interesse. Próximo passo: ativar seu link.</p>}
+            </form>
+          </div>
+        </section>
+      </main>
+
       <footer className="footer">
-        <div className="container">
-          <div className="footer-content">
-            <div className="footer-section">
-              <h4>CorteCertoApp</h4>
-              <p>A agenda que a barbearia realmente precisa.</p>
-            </div>
-            <div className="footer-section">
-              <h4>Links</h4>
-              <ul>
-                <li><a href="#features">Recursos</a></li>
-                <li><a href="#pricing">Preços</a></li>
-                <li><a href="#contact">Contato</a></li>
-              </ul>
-            </div>
-            <div className="footer-section">
-              <h4>Legal</h4>
-              <ul>
-                <li><a href="#">Privacidade</a></li>
-                <li><a href="#">Termos</a></li>
-              </ul>
-            </div>
+        <div className="container footer-content">
+          <div>
+            <img src={logo} alt="CorteCertoApp" className="footer-logo" />
+            <p>A agenda pública com link único para barbearias de alto giro venderem melhor e atenderem com mais ordem.</p>
           </div>
-          <div className="footer-bottom">
-            <p>&copy; 2025 CorteCertoApp. Todos os direitos reservados.</p>
+          <div className="footer-links">
+            <a href="#beneficios">Benefícios</a>
+            <a href="#como-funciona">Como funciona</a>
+            <a href="#oferta">Oferta</a>
+            <a href="#contato">Contato</a>
           </div>
         </div>
       </footer>
