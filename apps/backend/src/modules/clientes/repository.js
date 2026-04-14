@@ -1,8 +1,9 @@
 const prisma = require('../../lib/prisma')
 
 class ClientesRepository {
-  async getClientes() {
+  async getClientes(where = {}) {
     return prisma.cliente.findMany({
+      where,
       include: {
         barbearia: true,
         agendamentos: {

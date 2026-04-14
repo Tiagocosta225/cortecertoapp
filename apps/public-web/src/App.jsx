@@ -74,7 +74,7 @@ async function fetchJson(url, options) {
   const payload = contentType.includes('application/json') ? await response.json() : null
 
   if (!response.ok) {
-    throw new Error(payload?.message || 'Não foi possível carregar os dados.')
+    throw new Error(payload?.message || payload?.error || 'Não foi possível carregar os dados.')
   }
 
   return payload
@@ -99,7 +99,10 @@ function getNextDays(total = 4) {
   return Array.from({ length: total }, (_, index) => {
     const date = new Date()
     date.setDate(date.getDate() + index)
-    return date.toISOString().slice(0, 10)
+    const year = date.getFullYear()
+    const month = String(date.getMonth() + 1).padStart(2, '0')
+    const day = String(date.getDate()).padStart(2, '0')
+    return `${year}-${month}-${day}`
   })
 }
 
@@ -338,10 +341,10 @@ function BookingLinkPage() {
   const [agenda, setAgenda] = useState(null)
   const [selectedServiceId, setSelectedServiceId] = useState('')
   const [selectedSlot, setSelectedSlot] = useState('')
+  const [step, setStep] = useState('name')
   const [loading, setLoading] = useState(true)
   const [bookingLoading, setBookingLoading] = useState(false)
   const [error, setError] = useState('')
-  const [successMessage, setSuccessMessage] = useState('')
   const [form, setForm] = useState({
     nome: '',
     telefone: '',
@@ -358,9 +361,6 @@ function BookingLinkPage() {
         const payload = await fetchJson(`${API_BASE_URL}/barbearias/${slug}`)
         if (cancelled) return
         setShop(payload)
-        if (payload.servicos?.length) {
-          setSelectedServiceId(String(payload.servicos[0].id))
-        }
       } catch (loadError) {
         if (!cancelled) {
           setError(loadError.message)
@@ -384,7 +384,12 @@ function BookingLinkPage() {
 
     async function loadAgenda() {
       try {
-        const payload = await fetchJson(`${API_BASE_URL}/barbearias/${slug}/agenda?date=${selectedDate}`)
+        const searchParams = new URLSearchParams({ date: selectedDate })
+        if (selectedServiceId) {
+          searchParams.set('servicoId', selectedServiceId)
+        }
+
+        const payload = await fetchJson(`${API_BASE_URL}/barbearias/${slug}/agenda?${searchParams.toString()}`)
         if (cancelled) return
         setAgenda(payload)
         setSelectedSlot('')
@@ -399,18 +404,101 @@ function BookingLinkPage() {
     return () => {
       cancelled = true
     }
-  }, [shop, slug, selectedDate])
+  }, [shop, slug, selectedDate, selectedServiceId])
 
-  async function handleBookingSubmit(event) {
-    event.preventDefault()
-    if (!selectedServiceId || !selectedSlot) return
+  const selectedService = shop?.servicos?.find((item) => String(item.id) === String(selectedServiceId))
+  const days = getNextDays(5)
+  const selectedDeposit = selectedService?.depositoAntecipado || shop?.taxaReservaPadrao || 0
+  const availableSlots = agenda?.slots?.filter((slot) => slot.disponivel) || []
 
-    const selectedService = shop?.servicos?.find((item) => String(item.id) === String(selectedServiceId))
+  const messages = []
+  if (shop) {
+    messages.push({ from: 'bot', text: `Olá, tudo bem? Sou a assistente virtual da ${shop.nome} e vou cuidar do seu agendamento.` })
+    messages.push({ from: 'bot', text: 'Qual o seu nome? Escreva nome e sobrenome, por favor.' })
+    if (form.nome) {
+      messages.push({ from: 'human', text: form.nome })
+      messages.push({ from: 'bot', text: `Como vai, ${form.nome.split(' ')[0]}! Que bom ter você por aqui.` })
+    }
+    if (step !== 'name') messages.push({ from: 'bot', text: 'Por qual serviço você está procurando?' })
+    if (step === 'service' && !shop.servicos?.length) {
+      messages.push({ from: 'bot', text: 'Ainda não encontrei serviços ativos cadastrados para essa barbearia.' })
+    }
+    if (selectedService) {
+      messages.push({ from: 'human', text: selectedService.nome })
+      messages.push({ from: 'bot', text: `Perfeito. Esse serviço dura ${selectedService.duracaoMin} minutos.` })
+    }
+    if (['date', 'time', 'phone', 'email', 'confirm', 'done'].includes(step)) {
+      messages.push({ from: 'bot', text: 'Certo, qual é o melhor dia para você ser atendido?' })
+    }
+    if (['time', 'phone', 'email', 'confirm', 'done'].includes(step)) {
+      const formatted = formatDateLabel(selectedDate)
+      messages.push({ from: 'human', text: `${formatted.short}, ${formatted.dayMonth}` })
+      messages.push({ from: 'bot', text: 'Agora escolha um horário disponível para esse serviço.' })
+    }
+    if (selectedSlot) {
+      messages.push({ from: 'human', text: selectedSlot })
+      messages.push({ from: 'bot', text: `Ótimo, reservei ${selectedDate} às ${selectedSlot} enquanto finalizamos seus dados.` })
+    }
+    if (['phone', 'email', 'confirm', 'done'].includes(step)) messages.push({ from: 'bot', text: 'Que bom. Qual é o seu telefone?' })
+    if (form.telefone) messages.push({ from: 'human', text: form.telefone })
+    if (['email', 'confirm', 'done'].includes(step)) messages.push({ from: 'bot', text: 'Se quiser receber o resumo por e-mail, informe seu e-mail. Você também pode pular.' })
+    if (form.email) messages.push({ from: 'human', text: form.email })
+    if (['confirm', 'done'].includes(step)) messages.push({ from: 'bot', text: `Confira: ${selectedService?.nome} em ${selectedDate} às ${selectedSlot}. Sinal: ${formatCurrency(selectedDeposit)}.` })
+    if (step === 'done') messages.push({ from: 'bot', text: 'Agendamento realizado com sucesso. Muito obrigado, até mais!' })
+  }
+
+  function goToService() {
+    if (!form.nome.trim()) {
+      setError('Informe seu nome para continuar.')
+      return
+    }
+
+    setError('')
+    setStep('service')
+  }
+
+  function chooseService(serviceId) {
+    setSelectedServiceId(String(serviceId))
+    setError('')
+    setStep('date')
+  }
+
+  function chooseDate(day) {
+    setSelectedDate(day)
+    setError('')
+    setStep('time')
+  }
+
+  function chooseSlot(time) {
+    setSelectedSlot(time)
+    setError('')
+    setStep('phone')
+  }
+
+  function goToEmail() {
+    if (!form.telefone.trim()) {
+      setError('Digite seu telefone para continuar.')
+      return
+    }
+
+    setError('')
+    setStep('email')
+  }
+
+  function goToConfirm() {
+    setError('')
+    setStep('confirm')
+  }
+
+  async function handleBookingSubmit() {
+    if (!selectedServiceId || !selectedSlot || !form.nome.trim() || !form.telefone.trim()) {
+      setError('Complete os dados do agendamento para continuar.')
+      return
+    }
 
     try {
       setBookingLoading(true)
       setError('')
-      setSuccessMessage('')
 
       await fetchJson(`${API_BASE_URL}/barbearias/${slug}/agendamentos`, {
         method: 'POST',
@@ -428,28 +516,221 @@ function BookingLinkPage() {
         }),
       })
 
-      setSuccessMessage('Agendamento criado com sucesso. Agora é só confirmar com a barbearia.')
-      const refreshedAgenda = await fetchJson(`${API_BASE_URL}/barbearias/${slug}/agenda?date=${selectedDate}`)
-      setAgenda(refreshedAgenda)
-      setSelectedSlot('')
-      setForm({
-        nome: '',
-        telefone: '',
-        email: '',
-      })
+      const searchParams = new URLSearchParams({ date: selectedDate })
+      searchParams.set('servicoId', selectedServiceId)
+      setStep('done')
+
+      try {
+        const refreshedAgenda = await fetchJson(`${API_BASE_URL}/barbearias/${slug}/agenda?${searchParams.toString()}`)
+        setAgenda(refreshedAgenda)
+      } catch {
+        setAgenda((current) => {
+          if (!current?.slots) return current
+          return {
+            ...current,
+            slots: current.slots.map((slot) =>
+              slot.time === selectedSlot ? { ...slot, disponivel: false, tag: 'ocupado' } : slot
+            ),
+          }
+        })
+      }
     } catch (submitError) {
       setError(submitError.message)
+      if (submitError.message.includes('reservado')) {
+        setStep('time')
+      }
     } finally {
       setBookingLoading(false)
     }
   }
 
+  function resetChat() {
+    setSelectedServiceId('')
+    setSelectedSlot('')
+    setSelectedDate(getNextDays(4)[0])
+    setError('')
+    setForm({ nome: '', telefone: '', email: '' })
+    setStep('name')
+  }
+
+  function renderActions() {
+    if (!shop) return null
+
+    if (step === 'name') {
+      return (
+        <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); goToService() }}>
+          <Input
+            value={form.nome}
+            onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
+            placeholder="Seu nome e sobrenome"
+            className="h-14 rounded-lg border-border bg-background text-foreground placeholder:text-muted-foreground"
+          />
+          <Button type="submit" className="h-14 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
+            Enviar
+          </Button>
+        </form>
+      )
+    }
+
+    if (step === 'service') {
+      if (!shop.servicos?.length) {
+        return (
+          <div className="space-y-3">
+            <div className="rounded-lg border border-primary/15 bg-secondary p-4 text-sm leading-6 text-secondary-foreground">
+              Cadastre pelo menos um serviço ativo no painel para liberar o agendamento por link.
+            </div>
+            {shop.whatsappLink && (
+              <Button asChild variant="outline" className="h-14 w-full rounded-lg border-primary/20 bg-card text-foreground hover:bg-secondary">
+                <a href={shop.whatsappLink} target="_blank" rel="noreferrer">
+                  Falar com a barbearia
+                </a>
+              </Button>
+            )}
+          </div>
+        )
+      }
+
+      return (
+        <div className="flex gap-3 overflow-x-auto pb-2">
+          {shop.servicos.map((service) => (
+            <button
+              key={service.id}
+              type="button"
+              onClick={() => chooseService(service.id)}
+              className="min-w-[180px] rounded-lg border border-primary/15 bg-card p-4 text-left text-foreground shadow-sm transition hover:border-primary/40 hover:bg-secondary"
+            >
+              <p className="font-semibold">{service.nome}</p>
+              <p className="mt-2 text-sm text-muted-foreground">{service.duracaoMin} min</p>
+              <p className="mt-3 text-lg font-bold text-primary">{formatCurrency(service.preco)}</p>
+            </button>
+          ))}
+        </div>
+      )
+    }
+
+    if (step === 'date') {
+      return (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+          {days.map((day) => {
+            const formatted = formatDateLabel(day)
+            return (
+              <button
+                key={day}
+                type="button"
+                onClick={() => chooseDate(day)}
+                className="rounded-lg border border-primary/15 bg-card px-3 py-4 text-center text-foreground shadow-sm transition hover:border-primary/40 hover:bg-secondary"
+              >
+                <p className="text-xs uppercase text-muted-foreground">{formatted.short}</p>
+                <p className="mt-2 font-bold">{formatted.dayMonth}</p>
+              </button>
+            )
+          })}
+        </div>
+      )
+    }
+
+    if (step === 'time') {
+      return (
+        <div className="grid grid-cols-3 gap-3">
+          {availableSlots.length ? (
+            availableSlots.slice(0, 12).map((slot) => (
+              <button
+                key={slot.time}
+                type="button"
+                onClick={() => chooseSlot(slot.time)}
+                className="rounded-lg border border-primary/15 bg-card px-3 py-4 text-center font-semibold text-foreground shadow-sm transition hover:border-primary/40 hover:bg-secondary"
+              >
+                {slot.time}
+              </button>
+            ))
+          ) : (
+            <div className="col-span-3 rounded-lg border border-border bg-muted p-4 text-center text-sm text-muted-foreground">
+              Neste dia, todos os horários já foram reservados.
+            </div>
+          )}
+          <Button type="button" variant="outline" className="col-span-3 h-12 rounded-lg border-primary/20 bg-card text-foreground hover:bg-secondary" onClick={() => setStep('date')}>
+            Escolher outro dia
+          </Button>
+        </div>
+      )
+    }
+
+    if (step === 'phone') {
+      return (
+        <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); goToEmail() }}>
+          <Input
+            value={form.telefone}
+            onChange={(event) => setForm((current) => ({ ...current, telefone: event.target.value }))}
+            placeholder="Telefone"
+            className="h-14 rounded-lg border-border bg-background text-foreground placeholder:text-muted-foreground"
+          />
+          <Button type="submit" className="h-14 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
+            Enviar
+          </Button>
+        </form>
+      )
+    }
+
+    if (step === 'email') {
+      return (
+        <form className="space-y-3" onSubmit={(event) => { event.preventDefault(); goToConfirm() }}>
+          <Input
+            type="email"
+            value={form.email}
+            onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
+            placeholder="Seu e-mail"
+            className="h-14 rounded-lg border-border bg-background text-foreground placeholder:text-muted-foreground"
+          />
+          <div className="grid grid-cols-2 gap-3">
+            <Button type="button" variant="outline" className="h-14 rounded-lg border-primary/20 bg-card text-foreground hover:bg-secondary" onClick={goToConfirm}>
+              Pular
+            </Button>
+            <Button type="submit" className="h-14 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90">
+              Enviar
+            </Button>
+          </div>
+        </form>
+      )
+    }
+
+    if (step === 'confirm') {
+      return (
+        <div className="space-y-3">
+          <Button
+            type="button"
+            disabled={bookingLoading}
+            className="h-14 w-full rounded-lg bg-primary text-primary-foreground hover:bg-primary/90"
+            onClick={handleBookingSubmit}
+          >
+            {bookingLoading ? 'Confirmando...' : 'Confirmar agendamento'}
+          </Button>
+          <Button type="button" variant="outline" className="h-12 w-full rounded-lg border-primary/20 bg-card text-foreground hover:bg-secondary" onClick={() => setStep('time')}>
+            Escolher outro horário
+          </Button>
+        </div>
+      )
+    }
+
+    return (
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Button type="button" className="h-14 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90" onClick={resetChat}>
+          Novo agendamento
+        </Button>
+        {shop.whatsappLink && (
+          <Button asChild variant="outline" className="h-14 rounded-lg border-primary/20 bg-card text-foreground hover:bg-secondary">
+            <a href={shop.whatsappLink} target="_blank" rel="noreferrer">
+              Falar com a barbearia
+            </a>
+          </Button>
+        )}
+      </div>
+    )
+  }
+
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
-        <Card className="w-full max-w-xl border-border">
-          <CardContent className="p-8 text-center text-muted-foreground">Carregando barbearia...</CardContent>
-        </Card>
+        <div className="rounded-lg border border-border bg-card px-6 py-5 text-sm text-muted-foreground shadow-sm">Carregando assistente...</div>
       </div>
     )
   }
@@ -457,370 +738,67 @@ function BookingLinkPage() {
   if (error && !shop) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-background px-4 text-foreground">
-        <Card className="w-full max-w-xl border-border">
-          <CardContent className="space-y-4 p-8 text-center">
-            <Badge variant="secondary">Link não encontrado</Badge>
-            <h1 className="text-3xl font-bold">Essa barbearia não está disponível.</h1>
-            <p className="text-muted-foreground">{error}</p>
-            <Button asChild className="bg-primary text-primary-foreground hover:bg-primary/90">
-              <Link to="/">Voltar para o início</Link>
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="w-full max-w-xl rounded-lg border border-border bg-card p-8 text-center shadow-sm">
+          <Badge variant="secondary">Link não encontrado</Badge>
+          <h1 className="mt-4 text-3xl font-bold">Essa barbearia não está disponível.</h1>
+          <p className="mt-3 text-muted-foreground">{error}</p>
+          <Button asChild className="mt-5 bg-primary text-primary-foreground hover:bg-primary/90">
+            <Link to="/">Voltar para o início</Link>
+          </Button>
+        </div>
       </div>
     )
   }
 
-  const selectedService = shop?.servicos?.find((item) => String(item.id) === String(selectedServiceId))
-  const days = getNextDays(4)
-  const selectedDeposit = selectedService?.depositoAntecipado || shop?.taxaReservaPadrao || 0
-
   return (
     <div className="min-h-screen bg-background text-foreground">
-      <div className="mx-auto w-full max-w-7xl px-4 py-6 md:px-6 md:py-8 lg:px-8">
-        <header className="mb-8 overflow-hidden rounded-[2rem] border border-border/70 bg-white/85 shadow-xl shadow-primary/8 backdrop-blur">
-          <div className="bg-[radial-gradient(circle_at_top_left,_rgba(0,102,255,0.22),_transparent_36%),linear-gradient(135deg,#ffffff_0%,#edf4ff_100%)] p-6 md:p-8">
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="flex items-center gap-4">
-                <div className="rounded-2xl border border-white/70 bg-white/90 p-3 shadow-sm">
-                  <img src={logo} alt="CorteCertoApp" className="h-12 w-auto object-contain md:h-14" />
-                </div>
-                <div>
-                  <div className="mb-3 flex flex-wrap gap-2">
-                    <Badge className="bg-primary text-primary-foreground hover:bg-primary">Link público ativo</Badge>
-                    <Badge variant="secondary" className="bg-white/80 text-foreground">
-                      Atendimento direto pela agenda
-                    </Badge>
-                  </div>
-                  <h1 className="text-3xl font-bold tracking-tight md:text-4xl">{shop.nome}</h1>
-                  <div className="mt-3 flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
-                    <span className="inline-flex items-center gap-1.5">
-                      <MapPin className="h-4 w-4 text-primary" />
-                      {shop.cidade || 'Cidade não informada'}
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Star className="h-4 w-4 fill-primary text-primary" />
-                      Atendimento com confirmação rápida
-                    </span>
-                    <span className="inline-flex items-center gap-1.5">
-                      <Scissors className="h-4 w-4 text-primary" />
-                      {shop.servicos?.length || 0} serviços disponíveis
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <Button asChild variant="outline" className="border-primary/15 bg-white/80 hover:bg-secondary">
-                <Link to="/">Voltar</Link>
-              </Button>
+      <header className="sticky top-0 z-10 border-b border-border bg-card/95 px-4 py-4 shadow-sm backdrop-blur">
+        <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-white">
+              <img src={logo} alt="CorteCertoApp" className="h-8 w-auto object-contain" />
             </div>
-
-            <div className="mt-6 grid gap-4 lg:grid-cols-[1.1fr_0.9fr]">
-              <div className="space-y-4">
-                <h2 className="max-w-3xl text-3xl font-bold leading-tight md:text-[2.6rem]">
-                  {shop.descricao || 'Escolha o serviço ideal, compare horários e finalize o agendamento em poucos toques.'}
-                </h2>
-                <p className="max-w-2xl text-base leading-8 text-muted-foreground md:text-lg">
-                  Aqui o cliente encontra uma experiência mais clara para reservar, com detalhes do atendimento,
-                  transparência no sinal e acesso rápido ao contato da barbearia.
-                </p>
-              </div>
-
-              <div className="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
-                <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary text-primary">
-                      <Clock3 className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Atendimento</p>
-                      <p className="font-semibold">Escolha dia e horário livre</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary text-primary">
-                      <CreditCard className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Reserva</p>
-                      <p className="font-semibold">Sinal a partir de {formatCurrency(selectedDeposit)}</p>
-                    </div>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-white/70 bg-white/85 p-4 shadow-sm">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-secondary text-primary">
-                      <PhoneCall className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-muted-foreground">Suporte</p>
-                      <p className="font-semibold">Contato direto com a barbearia</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
+            <div className="min-w-0">
+              <p className="truncate font-semibold">{shop.nome}</p>
+              <p className="truncate text-xs text-muted-foreground">{shop.cidade || 'Agenda online'}</p>
             </div>
           </div>
-        </header>
-
-        <div className="grid gap-6 lg:grid-cols-[1.1fr_0.9fr]">
-          <section className="space-y-6">
-            <Card className="border-border/80 bg-white/90 shadow-sm">
-              <CardContent className="space-y-5 p-6">
-                <div className="flex flex-wrap items-center justify-between gap-4">
-                  <div>
-                    <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Serviços</p>
-                    <h2 className="mt-2 text-2xl font-bold md:text-3xl">Escolha a experiência que você quer reservar</h2>
-                  </div>
-                  <div className="rounded-full border border-primary/15 bg-secondary/70 px-4 py-2 text-sm text-muted-foreground">
-                    Preço, duração e sinal visíveis antes de confirmar
-                  </div>
-                </div>
-
-                <div className="grid gap-4 xl:grid-cols-2">
-                  {shop.servicos.map((service) => (
-                    <button
-                      key={service.id}
-                      type="button"
-                      onClick={() => setSelectedServiceId(String(service.id))}
-                      className={`rounded-[1.35rem] border p-5 text-left transition ${
-                        String(service.id) === String(selectedServiceId)
-                          ? 'border-primary bg-secondary shadow-lg shadow-primary/10'
-                          : 'border-border bg-card hover:border-primary/60 hover:bg-secondary/60'
-                      }`}
-                    >
-                      <div className="flex items-start justify-between gap-4">
-                        <div>
-                          <p className="text-lg font-semibold">{service.nome}</p>
-                          <p className="mt-2 text-sm leading-6 text-muted-foreground">
-                            Atendimento pensado para manter a agenda clara e o valor visível.
-                          </p>
-                        </div>
-                        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white/80 text-primary shadow-sm">
-                          <Scissors className="h-5 w-5" />
-                        </div>
-                      </div>
-                      <div className="mt-5 flex flex-wrap gap-2">
-                        <span className="rounded-full bg-white/85 px-3 py-1 text-xs font-medium text-foreground shadow-sm">
-                          {service.duracaoMin} min
-                        </span>
-                        <span className="rounded-full bg-white/85 px-3 py-1 text-xs font-medium text-foreground shadow-sm">
-                          Sinal {formatCurrency(service.depositoAntecipado || shop.taxaReservaPadrao || 0)}
-                        </span>
-                      </div>
-                      <p className="mt-5 text-2xl font-bold text-primary">{formatCurrency(service.preco)}</p>
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/80 bg-white/90 shadow-sm">
-              <CardContent className="space-y-5 p-6">
-                <div>
-                  <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Disponibilidade</p>
-                  <h3 className="mt-2 text-2xl font-bold">Escolha o melhor dia para seu atendimento</h3>
-                  <p className="text-sm text-muted-foreground">Agenda pública atualizada para os próximos dias</p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  {days.map((day) => {
-                    const formatted = formatDateLabel(day)
-                    return (
-                      <button
-                        key={day}
-                        type="button"
-                        onClick={() => setSelectedDate(day)}
-                        className={`rounded-[1.35rem] border p-4 text-left transition ${
-                          day === selectedDate
-                            ? 'border-primary bg-secondary shadow-lg shadow-primary/10'
-                            : 'border-border bg-card hover:border-primary/60 hover:bg-secondary/70'
-                        }`}
-                      >
-                        <p className="text-xs uppercase tracking-wide text-muted-foreground">{formatted.short}</p>
-                        <p className="mt-2 text-xl font-bold">{formatted.dayMonth}</p>
-                        <p className="mt-2 text-sm text-muted-foreground">
-                          {day === selectedDate ? 'Dia selecionado' : 'Toque para ver horários'}
-                        </p>
-                      </button>
-                    )
-                  })}
-                </div>
-
-                <div className="grid gap-3 md:grid-cols-3">
-                  <div className="rounded-2xl border border-border/70 bg-secondary/60 p-4">
-                    <div className="flex items-center gap-3">
-                      <CalendarDays className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-semibold">Escolha guiada</p>
-                        <p className="text-sm text-muted-foreground">Veja só os dias mais próximos e já disponíveis.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-border/70 bg-secondary/60 p-4">
-                    <div className="flex items-center gap-3">
-                      <ShieldCheck className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-semibold">Informação clara</p>
-                        <p className="text-sm text-muted-foreground">O valor do sinal aparece antes do envio do pedido.</p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="rounded-2xl border border-border/70 bg-secondary/60 p-4">
-                    <div className="flex items-center gap-3">
-                      <MessageCircle className="h-5 w-5 text-primary" />
-                      <div>
-                        <p className="font-semibold">Contato imediato</p>
-                        <p className="text-sm text-muted-foreground">Continue no WhatsApp caso precise ajustar algo.</p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-          </section>
-
-          <section className="space-y-6">
-            <Card className="border-border/80 bg-white/90 shadow-sm">
-              <CardContent className="space-y-5 p-6">
-                <div>
-                  <p className="text-sm font-medium uppercase tracking-[0.18em] text-primary">Horários</p>
-                  <h3 className="mt-2 text-2xl font-bold">Selecione o melhor horário para você</h3>
-                  <p className="text-sm text-muted-foreground">Os horários abaixo refletem a agenda pública da barbearia</p>
-                </div>
-
-                <div className="space-y-3">
-                  {agenda?.slots?.map((slot) => (
-                    <button
-                      key={slot.time}
-                      type="button"
-                      disabled={!slot.disponivel}
-                      onClick={() => slot.disponivel && setSelectedSlot(slot.time)}
-                      className={`flex w-full items-center justify-between rounded-[1.35rem] border px-4 py-4 text-left transition ${
-                        !slot.disponivel
-                          ? 'cursor-not-allowed border-border bg-muted text-muted-foreground opacity-60'
-                          : selectedSlot === slot.time
-                            ? 'border-primary bg-secondary shadow-lg shadow-primary/10'
-                            : 'border-border bg-card hover:border-primary/60 hover:bg-secondary/70'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <Clock3 className="h-5 w-5 text-primary" />
-                        <div>
-                          <p className="font-semibold">{slot.time}</p>
-                          <p className="text-sm text-muted-foreground">{slot.tag}</p>
-                        </div>
-                      </div>
-                      <ArrowRight className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card className="border-border/80 bg-white/90 shadow-sm">
-              <CardContent className="space-y-5 p-6">
-                <Badge variant="secondary" className="gap-2">
-                  <QrCode className="h-4 w-4" />
-                  Reserva protegida
-                </Badge>
-                <div>
-                  <h3 className="text-2xl font-bold">Confirme os dados e finalize a reserva</h3>
-                  <p className="mt-2 text-sm leading-7 text-muted-foreground">
-                    Alguns serviços podem usar uma taxa de reserva para proteger o horário escolhido.
-                  </p>
-                </div>
-
-                <div className="grid gap-3 sm:grid-cols-2">
-                  <div className="rounded-[1.35rem] bg-secondary p-4">
-                    <p className="text-sm text-muted-foreground">Serviço escolhido</p>
-                    <p className="mt-2 font-semibold">{selectedService?.nome || 'Selecione um serviço'}</p>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      {selectedService ? `${selectedService.duracaoMin} minutos de atendimento` : 'Escolha um serviço para continuar'}
-                    </p>
-                  </div>
-                  <div className="rounded-[1.35rem] bg-secondary p-4">
-                    <p className="text-sm text-muted-foreground">Resumo da reserva</p>
-                    <p className="mt-2 font-semibold">
-                      {selectedSlot ? `${selectedDate} às ${selectedSlot}` : 'Selecione um horário disponível'}
-                    </p>
-                    <p className="mt-2 text-sm text-muted-foreground">Reserva antecipada: {formatCurrency(selectedDeposit)}</p>
-                  </div>
-                </div>
-
-                <div className="rounded-[1.35rem] border border-border/70 bg-white p-4">
-                  <div className="flex items-start gap-3">
-                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-secondary text-primary">
-                      <UserRound className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-semibold">Seus dados só entram no final</p>
-                      <p className="mt-1 text-sm leading-6 text-muted-foreground">
-                        Preencha nome, telefone e email para concluir a solicitação. Depois, se quiser, continue a
-                        conversa diretamente com a barbearia.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-
-                {error && <p className="text-sm text-red-600">{error}</p>}
-                {successMessage && <p className="text-sm text-green-700">{successMessage}</p>}
-
-                <form className="space-y-4" onSubmit={handleBookingSubmit}>
-                  <div className="space-y-2">
-                    <Label htmlFor="nome">Nome</Label>
-                    <Input
-                      id="nome"
-                      value={form.nome}
-                      onChange={(event) => setForm((current) => ({ ...current, nome: event.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="telefone">Telefone</Label>
-                    <Input
-                      id="telefone"
-                      value={form.telefone}
-                      onChange={(event) => setForm((current) => ({ ...current, telefone: event.target.value }))}
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input
-                      id="email"
-                      type="email"
-                      value={form.email}
-                      onChange={(event) => setForm((current) => ({ ...current, email: event.target.value }))}
-                    />
-                  </div>
-
-                  <div className="flex flex-col gap-3">
-                    <Button
-                      type="submit"
-                      disabled={bookingLoading || !selectedServiceId || !selectedSlot}
-                      className="bg-primary text-primary-foreground hover:bg-primary/90"
-                    >
-                      <MessageCircle className="mr-2 h-4 w-4" />
-                      {bookingLoading ? 'Confirmando...' : 'Criar agendamento'}
-                    </Button>
-                    {shop.whatsappLink && (
-                      <Button asChild variant="outline">
-                        <a href={shop.whatsappLink} target="_blank" rel="noreferrer">
-                          <PhoneCall className="mr-2 h-4 w-4" />
-                          Falar com a barbearia
-                        </a>
-                      </Button>
-                    )}
-                  </div>
-                </form>
-              </CardContent>
-            </Card>
-          </section>
+          <Button type="button" variant="outline" className="rounded-lg border-primary/20 bg-card text-foreground hover:bg-secondary" onClick={resetChat}>
+            Reiniciar
+          </Button>
         </div>
-      </div>
+      </header>
+
+      <main className="mx-auto flex min-h-[calc(100vh-76px)] max-w-3xl flex-col px-4 py-6">
+        <div className="flex-1 space-y-4 pb-8">
+          {messages.map((message, index) => (
+            <div key={`${message.text}-${index}`} className={`flex items-end gap-3 ${message.from === 'human' ? 'justify-end' : ''}`}>
+              {message.from === 'bot' && (
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+                  CC
+                </div>
+              )}
+              <div className={`max-w-[84%] rounded-lg px-5 py-4 text-sm leading-6 shadow-lg ${
+                message.from === 'human'
+                  ? 'border border-border bg-card text-foreground'
+                  : 'bg-primary text-primary-foreground'
+              }`}>
+                {message.text}
+              </div>
+            </div>
+          ))}
+
+          {error && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+        </div>
+
+        <div className="sticky bottom-0 rounded-lg border border-border bg-card/95 p-4 shadow-2xl backdrop-blur">
+          {renderActions()}
+        </div>
+      </main>
     </div>
   )
 }

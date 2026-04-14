@@ -1,6 +1,22 @@
 const repository = require('./repository')
 const { normalizeSlug } = require('../../utils/slug')
 
+async function buildUniqueSlug(value, ignoredBarbeariaId = null) {
+  const baseSlug = normalizeSlug(value) || 'barbearia'
+  let slug = baseSlug
+  let suffix = 2
+
+  while (true) {
+    const existing = await repository.findSlugOwner(slug)
+    if (!existing || Number(existing.id) === Number(ignoredBarbeariaId)) {
+      return slug
+    }
+
+    slug = `${baseSlug}-${suffix}`
+    suffix += 1
+  }
+}
+
 class BarbeariasService {
   async getBarbearias() {
     return repository.findAll()
@@ -24,9 +40,11 @@ class BarbeariasService {
       throw new Error('Nome da barbearia é obrigatório')
     }
 
+    const slug = await buildUniqueSlug(data.slug || nome)
+
     return repository.create({
       nome,
-      slug: normalizeSlug(data.slug || nome),
+      slug,
       endereco: data.endereco || '',
       telefone: data.telefone || '',
       descricao: data.descricao || null,
@@ -46,7 +64,7 @@ class BarbeariasService {
 
   async updateBarbearia(id, data) {
     if (data.slug || data.nome) {
-      data.slug = normalizeSlug(data.slug || data.nome)
+      data.slug = await buildUniqueSlug(data.slug || data.nome, id)
     }
 
     return repository.update(id, data)

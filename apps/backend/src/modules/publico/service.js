@@ -4,14 +4,25 @@ const clientesService = require('../clientes/service')
 const agendamentosService = require('../agendamentos/service')
 const { startOfDay, endOfDay, toDateTime, toHourMinute } = require('../../utils/datetime')
 
-function buildSlots(horarioAbertura, horarioFechamento) {
+const CANCELLED_STATUSES = new Set(['cancelado'])
+
+function toMinutes(time) {
+  const [hour, minute] = String(time || '00:00').split(':').map(Number)
+  return hour * 60 + minute
+}
+
+function rangesOverlap(startA, endA, startB, endB) {
+  return startA < endB && startB < endA
+}
+
+function buildSlots(horarioAbertura, horarioFechamento, durationMinutes = 30) {
   const slots = []
   const [openHour, openMinute] = horarioAbertura.split(':').map(Number)
   const [closeHour, closeMinute] = horarioFechamento.split(':').map(Number)
   const current = new Date(Date.UTC(2024, 0, 1, openHour, openMinute, 0, 0))
   const end = new Date(Date.UTC(2024, 0, 1, closeHour, closeMinute, 0, 0))
 
-  while (current < end) {
+  while (current.getTime() + durationMinutes * 60 * 1000 <= end.getTime()) {
     slots.push(
       current.toLocaleTimeString('pt-BR', {
         hour: '2-digit',
@@ -24,6 +35,14 @@ function buildSlots(horarioAbertura, horarioFechamento) {
   }
 
   return slots
+}
+
+function findPublicServico(barbearia, servicoId) {
+  if (!servicoId && barbearia.servicos.length) {
+    return barbearia.servicos[0]
+  }
+
+  return barbearia.servicos.find((servico) => Number(servico.id) === Number(servicoId))
 }
 
 class PublicoService {
@@ -78,13 +97,19 @@ class PublicoService {
     }
   }
 
-  async getAgendaPublica(slug, dateString) {
+  async getAgendaPublica(slug, dateString, servicoId) {
     const barbearia = await barbeariasRepository.findBySlug(slug)
     if (!barbearia || !barbearia.ativa) {
       throw new Error('Barbearia não encontrada')
     }
 
-    const date = dateString ? new Date(dateString) : new Date()
+    const selectedServico = findPublicServico(barbearia, servicoId)
+    if (servicoId && !selectedServico) {
+      throw new Error('Serviço não encontrado para essa barbearia')
+    }
+
+    const selectedDuration = Number(selectedServico?.duracaoMin || 30)
+    const date = dateString ? toDateTime(dateString, '00:00') : new Date()
     const agendamentos = await prisma.agendamento.findMany({
       where: {
         barbeariaId: barbearia.id,
@@ -99,20 +124,31 @@ class PublicoService {
       orderBy: { data: 'asc' },
     })
 
-    const bookedTimes = new Set(agendamentos.map((item) => toHourMinute(item.data)))
-    const slots = buildSlots(barbearia.horarioAbertura, barbearia.horarioFechamento).map((time) => ({
-      time,
-      disponivel: !bookedTimes.has(time),
-      tag: bookedTimes.has(time)
-        ? 'ocupado'
-        : ['11:00', '14:30', '17:00'].includes(time)
-          ? 'mais_rentavel'
-          : 'disponivel',
-    }))
+    const activeAgendamentos = agendamentos.filter((item) => !CANCELLED_STATUSES.has(item.status))
+    const slots = buildSlots(barbearia.horarioAbertura, barbearia.horarioFechamento, selectedDuration).map((time) => {
+      const slotStart = toMinutes(time)
+      const slotEnd = slotStart + selectedDuration
+      const isBooked = activeAgendamentos.some((item) => {
+        const appointmentStart = toMinutes(toHourMinute(item.data))
+        const appointmentEnd = appointmentStart + Number(item.servico?.duracaoMin || 30)
+        return rangesOverlap(slotStart, slotEnd, appointmentStart, appointmentEnd)
+      })
+
+      return {
+        time,
+        disponivel: !isBooked,
+        tag: isBooked
+          ? 'ocupado'
+          : ['11:00', '14:30', '17:00'].includes(time)
+            ? 'mais_rentavel'
+            : 'disponivel',
+      }
+    })
 
     return {
       date: startOfDay(date).toISOString(),
       slug: barbearia.slug,
+      servicoId: selectedServico?.id || null,
       slots,
       servicos: barbearia.servicos.map((servico) => ({
         id: servico.id,
@@ -129,6 +165,50 @@ class PublicoService {
       throw new Error('Barbearia não encontrada')
     }
 
+    const servico = findPublicServico(barbearia, payload.servicoId)
+    if (!servico) {
+      throw new Error('Serviço não encontrado para essa barbearia')
+    }
+
+    const dateTime = toDateTime(payload.data, payload.horario)
+    if (dateTime < new Date()) {
+      throw new Error('Não é possível agendar no passado')
+    }
+
+    const newStart = toMinutes(toHourMinute(dateTime))
+    const newEnd = newStart + Number(servico.duracaoMin || 30)
+    const openTime = toMinutes(barbearia.horarioAbertura)
+    const closeTime = toMinutes(barbearia.horarioFechamento)
+    if (newStart < openTime || newEnd > closeTime) {
+      throw new Error('Horário fora do expediente da barbearia')
+    }
+
+    const dayAppointments = await prisma.agendamento.findMany({
+      where: {
+        barbeariaId: barbearia.id,
+        data: {
+          gte: startOfDay(dateTime),
+          lte: endOfDay(dateTime),
+        },
+      },
+      include: {
+        servico: true,
+      },
+    })
+    const existing = dayAppointments.some((item) => {
+      if (CANCELLED_STATUSES.has(item.status)) {
+        return false
+      }
+
+      const appointmentStart = toMinutes(toHourMinute(item.data))
+      const appointmentEnd = appointmentStart + Number(item.servico?.duracaoMin || 30)
+      return rangesOverlap(newStart, newEnd, appointmentStart, appointmentEnd)
+    })
+
+    if (existing) {
+      throw new Error('Esse horário já foi reservado')
+    }
+
     const cliente = await clientesService.findOrCreateClientePublico({
       nome: payload.nome,
       telefone: payload.telefone,
@@ -136,18 +216,6 @@ class PublicoService {
       aceitaWhatsapp: payload.aceitaWhatsapp ?? true,
       barbeariaId: barbearia.id,
     })
-
-    const dateTime = toDateTime(payload.data, payload.horario)
-    const existing = await prisma.agendamento.findFirst({
-      where: {
-        barbeariaId: barbearia.id,
-        data: dateTime,
-      },
-    })
-
-    if (existing) {
-      throw new Error('Esse horário já foi reservado')
-    }
 
     return agendamentosService.createPublicAgendamento(slug, {
       clienteId: cliente.id,

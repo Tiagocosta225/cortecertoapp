@@ -1,8 +1,14 @@
 const repository = require('./repository')
+const barbeariasRepository = require('../barbearias/repository')
 
 class ClientesService {
-  async getClientes() {
-    return repository.getClientes()
+  async getClientes(filters = {}) {
+    const where = {}
+    if (filters.barbeariaId) {
+      where.barbeariaId = Number(filters.barbeariaId)
+    }
+
+    return repository.getClientes(where)
   }
 
   async getClienteById(id) {
@@ -16,10 +22,21 @@ class ClientesService {
   }
 
   async createCliente(data) {
+    const nome = String(data.nome || '').trim()
+    const telefone = String(data.telefone || '').trim()
+    const barbeariaId = Number(data.barbeariaId)
+
+    if (!nome) throw new Error('Nome do cliente é obrigatório')
+    if (!telefone) throw new Error('Telefone do cliente é obrigatório')
+    if (!barbeariaId) throw new Error('Barbearia é obrigatória para cadastrar o cliente')
+
+    const barbearia = await barbeariasRepository.findById(barbeariaId)
+    if (!barbearia) throw new Error('Barbearia não encontrada')
+
     return repository.createCliente({
-      nome: data.nome,
-      telefone: data.telefone,
-      email: data.email || null,
+      nome,
+      telefone,
+      email: data.email ? String(data.email).trim() : null,
       aceitaWhatsapp: data.aceitaWhatsapp ?? true,
       statusRelacionamento: data.statusRelacionamento || 'ativo',
       observacoes: data.observacoes || null,
@@ -27,7 +44,7 @@ class ClientesService {
       ultimaVisita: data.ultimaVisita ? new Date(data.ultimaVisita) : null,
       totalGasto: Number(data.totalGasto || 0),
       visitas: Number(data.visitas || 0),
-      barbeariaId: Number(data.barbeariaId),
+      barbeariaId,
     })
   }
 
@@ -55,7 +72,34 @@ class ClientesService {
   }
 
   async updateCliente(id, data) {
-    return repository.updateCliente(id, data)
+    const payload = { ...data }
+
+    if (payload.nome !== undefined) {
+      payload.nome = String(payload.nome || '').trim()
+      if (!payload.nome) throw new Error('Nome do cliente é obrigatório')
+    }
+
+    if (payload.telefone !== undefined) {
+      payload.telefone = String(payload.telefone || '').trim()
+      if (!payload.telefone) throw new Error('Telefone do cliente é obrigatório')
+    }
+
+    if (payload.email !== undefined) {
+      payload.email = payload.email ? String(payload.email).trim() : null
+    }
+
+    if (payload.barbeariaId !== undefined) {
+      payload.barbeariaId = Number(payload.barbeariaId)
+      if (!payload.barbeariaId) throw new Error('Barbearia é obrigatória para cadastrar o cliente')
+      const barbearia = await barbeariasRepository.findById(payload.barbeariaId)
+      if (!barbearia) throw new Error('Barbearia não encontrada')
+    }
+
+    if (payload.totalGasto !== undefined) payload.totalGasto = Number(payload.totalGasto || 0)
+    if (payload.visitas !== undefined) payload.visitas = Number(payload.visitas || 0)
+    if (payload.ultimaVisita) payload.ultimaVisita = new Date(payload.ultimaVisita)
+
+    return repository.updateCliente(id, payload)
   }
 
   async deleteCliente(id) {

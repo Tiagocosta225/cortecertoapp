@@ -60,7 +60,11 @@ function getPublicBaseUrl() {
 
   const current = new URL(window.location.origin);
   if (current.hostname.startsWith("admin.")) {
-    current.hostname = current.hostname.replace(/^admin\./, "frontend.");
+    current.hostname = current.hostname === "admin.local"
+      ? "frontend.local"
+      : current.hostname.replace(/^admin\./, "app.");
+  } else if (current.port === "3002") {
+    current.port = "3001";
   }
 
   return current.origin;
@@ -536,37 +540,48 @@ export default function Configuracoes() {
                 Horário de Funcionamento
               </h3>
 
-              <div className="space-y-4">
-                {["Segunda", "Terça", "Quarta", "Quinta", "Sexta", "Sábado", "Domingo"].map(
-                  (day, idx) => (
-                    <div key={day} className="flex items-center gap-4 pb-4 border-b border-slate-200 last:border-0">
-                      <div className="w-24 font-medium text-slate-700">{day}</div>
-                      <div className="flex-1 flex items-center gap-2">
-                        <Input
-                          type="time"
-                          defaultValue={idx === 6 ? "" : "09:00"}
-                          disabled={idx === 6}
-                          className="w-24 bg-slate-50 border-slate-200"
-                        />
-                        <span className="text-slate-400">até</span>
-                        <Input
-                          type="time"
-                          defaultValue={idx === 6 ? "" : "18:00"}
-                          disabled={idx === 6}
-                          className="w-24 bg-slate-50 border-slate-200"
-                        />
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Switch defaultChecked={idx !== 6} />
-                        <span className="text-sm text-slate-600">{idx === 6 ? "Fechado" : "Aberto"}</span>
-                      </div>
-                    </div>
-                  )
-                )}
+              <div className="space-y-5">
+                <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 text-sm leading-6 text-blue-800">
+                  A agenda usa estes horários reais da barbearia para liberar os slots do calendário e do chat público.
+                </div>
+
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div>
+                    <Label className="text-slate-700">Abre às</Label>
+                    <Input
+                      type="time"
+                      value={form.horarioAbertura}
+                      onChange={(event) => updateField("horarioAbertura", event.target.value)}
+                      className="mt-2 bg-slate-50 border-slate-200"
+                      disabled={loadingShop}
+                    />
+                  </div>
+                  <div>
+                    <Label className="text-slate-700">Fecha às</Label>
+                    <Input
+                      type="time"
+                      value={form.horarioFechamento}
+                      onChange={(event) => updateField("horarioFechamento", event.target.value)}
+                      className="mt-2 bg-slate-50 border-slate-200"
+                      disabled={loadingShop}
+                    />
+                  </div>
+                </div>
+
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+                  <p className="font-medium text-slate-900">
+                    Expediente atual: {form.horarioAbertura || "--:--"} até {form.horarioFechamento || "--:--"}
+                  </p>
+                  <p className="mt-1 text-sm text-slate-600">
+                    No modelo atual, esse expediente é aplicado todos os dias. A agenda bloqueia horários fora desse intervalo.
+                  </p>
+                </div>
               </div>
 
               <div className="mt-6 flex justify-end">
-                <Button className="bg-blue-600 hover:bg-blue-700">Salvar Horários</Button>
+                <Button className="bg-blue-600 hover:bg-blue-700" onClick={handleSaveBarbearia} disabled={savingShop || loadingShop}>
+                  {savingShop ? "Salvando..." : "Salvar horários"}
+                </Button>
               </div>
             </Card>
           </TabsContent>

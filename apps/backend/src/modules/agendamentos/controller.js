@@ -2,7 +2,7 @@ const AgendamentoService = require('./service')
 
 class AgendamentosController {
   async index(req, res) {
-    const agendamentos = await AgendamentoService.getAgendamentos()
+    const agendamentos = await AgendamentoService.getAgendamentos(req.query)
     res.json(agendamentos)
   }
 

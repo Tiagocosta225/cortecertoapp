@@ -30,6 +30,13 @@ class BarbeariasRepository {
     })
   }
 
+  async findSlugOwner(slug) {
+    return prisma.barbearia.findUnique({
+      where: { slug },
+      select: { id: true },
+    })
+  }
+
   async create(data) {
     return prisma.barbearia.create({ data })
   }

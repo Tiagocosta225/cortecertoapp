@@ -7,7 +7,7 @@ class PublicoController {
   }
 
   async showAgenda(req, res) {
-    const payload = await PublicService.getAgendaPublica(req.params.slug, req.query.date)
+    const payload = await PublicService.getAgendaPublica(req.params.slug, req.query.date, req.query.servicoId)
     res.json(payload)
   }
 

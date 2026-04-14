@@ -2,7 +2,7 @@ const ClienteService = require('./service')
 
 class ClientesController {
   async index(req, res) {
-    const clientes = await ClienteService.getClientes()
+    const clientes = await ClienteService.getClientes(req.query)
     res.json(clientes)
   }
 

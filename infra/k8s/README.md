@@ -44,5 +44,6 @@ kubectl -n cortecerto rollout status deploy/cortecertoapp-mobile-web
 
 - O Ingress assume `ingressClassName: nginx`.
 - Ajuste os hosts (`*.cortecerto.local`) para o domínio real.
-- Os hosts web roteiam `/api` para o backend, compatível com `VITE_API_BASE_URL=/api`.
+- Os hosts web roteiam `/api` para o backend, compatível com `VITE_PUBLIC_API_BASE_URL=/api/public`.
+- No painel admin, defina `VITE_PUBLIC_BOOKING_BASE_URL` no build quando o host público não seguir o padrão `app.<dominio>`.
 - Para ambiente produtivo, prefira banco Postgres gerenciado fora do cluster.

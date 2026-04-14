@@ -17,13 +17,36 @@ function addDays(date, days) {
 }
 
 function toDateTime(dateString, timeString) {
-  const base = new Date(dateString)
-  if (Number.isNaN(base.getTime())) {
+  const datePart = String(dateString || '').split('T')[0]
+  const [year, month, day] = datePart.split('-').map(Number)
+  const [hours = '0', minutes = '0'] = String(timeString || '').split(':')
+  const parsedHours = Number(hours)
+  const parsedMinutes = Number(minutes)
+
+  if (
+    !year ||
+    !month ||
+    !day ||
+    Number.isNaN(parsedHours) ||
+    Number.isNaN(parsedMinutes) ||
+    parsedHours < 0 ||
+    parsedHours > 23 ||
+    parsedMinutes < 0 ||
+    parsedMinutes > 59
+  ) {
     throw new Error('Data inválida')
   }
 
-  const [hours = '0', minutes = '0'] = String(timeString || '').split(':')
-  base.setHours(Number(hours), Number(minutes), 0, 0)
+  const base = new Date(year, month - 1, day, parsedHours, parsedMinutes, 0, 0)
+  if (
+    Number.isNaN(base.getTime()) ||
+    base.getFullYear() !== year ||
+    base.getMonth() !== month - 1 ||
+    base.getDate() !== day
+  ) {
+    throw new Error('Data inválida')
+  }
+
   return base
 }
 
@@ -32,7 +55,6 @@ function toHourMinute(value) {
     hour: '2-digit',
     minute: '2-digit',
     hour12: false,
-    timeZone: 'UTC',
   })
 }
 

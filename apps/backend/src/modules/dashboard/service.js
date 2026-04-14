@@ -2,13 +2,24 @@ const barbeariasRepository = require('../barbearias/repository')
 const agendamentosRepository = require('../agendamentos/repository')
 const clientesRepository = require('../clientes/repository')
 const servicosRepository = require('../servicos/repository')
-const { startOfDay, endOfDay, addDays } = require('../../utils/datetime')
+const { startOfDay, endOfDay, addDays, toDateTime } = require('../../utils/datetime')
+
+const CANCELLED_STATUSES = new Set(['cancelado'])
 
 function sumRevenue(agendamentos) {
   return agendamentos.reduce(
     (sum, item) => sum + Number(item.valorServico || 0) + Number(item.valorReserva || 0),
     0
   )
+}
+
+function getDailySlotCapacity(shop) {
+  const [openHour, openMinute] = String(shop.horarioAbertura || '09:00').split(':').map(Number)
+  const [closeHour, closeMinute] = String(shop.horarioFechamento || '18:00').split(':').map(Number)
+  const open = openHour * 60 + openMinute
+  const close = closeHour * 60 + closeMinute
+
+  return Math.max(0, Math.floor((close - open) / 30))
 }
 
 function daysBetween(dateA, dateB) {
@@ -31,6 +42,9 @@ class DashboardService {
       agendamentosRepository.findByBarbeariaAndPeriod(shop.id, todayStart, weekEnd),
       clientesRepository.findByBarbeariaId(shop.id),
     ])
+    const activeAgendamentosHoje = agendamentosHoje.filter((item) => !CANCELLED_STATUSES.has(item.status))
+    const activeAgendamentosSemana = agendamentosSemana.filter((item) => !CANCELLED_STATUSES.has(item.status))
+    const dailySlotCapacity = getDailySlotCapacity(shop)
 
     const clientesEmRisco = clientes.filter((cliente) => {
       if (!cliente.agendamentos.length) return true
@@ -45,21 +59,26 @@ class DashboardService {
         slug: shop.slug,
       },
       hoje: {
-        agendamentos: agendamentosHoje.length,
-        reservasProtegidas: agendamentosHoje.filter((item) => Number(item.valorReserva) > 0).length,
-        faturamentoPrevisto: sumRevenue(agendamentosHoje),
+        agendamentos: activeAgendamentosHoje.length,
+        reservasProtegidas: activeAgendamentosHoje.filter((item) => Number(item.valorReserva) > 0).length,
+        faturamentoPrevisto: sumRevenue(activeAgendamentosHoje),
+        capacidadeSlots: dailySlotCapacity,
+        ocupacaoPercentual: dailySlotCapacity
+          ? Math.round((activeAgendamentosHoje.length / dailySlotCapacity) * 100)
+          : 0,
       },
       semana: {
-        faturamento: sumRevenue(agendamentosSemana),
+        faturamento: sumRevenue(activeAgendamentosSemana),
         meta: Number(shop.metaSemanal || 0),
       },
       crm: {
+        totalClientes: clientes.length,
         clientesEmRisco: clientesEmRisco.length,
         clientesReativados: clientes.filter((cliente) => cliente.statusRelacionamento === 'reativado').length,
       },
       antiFuro: {
-        protegidos: agendamentosSemana.filter((item) => Number(item.valorReserva) > 0).length,
-        pagamentosPendentes: agendamentosSemana.filter((item) => item.statusPagamento === 'aguardando_pix').length,
+        protegidos: activeAgendamentosSemana.filter((item) => Number(item.valorReserva) > 0).length,
+        pagamentosPendentes: activeAgendamentosSemana.filter((item) => item.statusPagamento === 'aguardando_pix').length,
       },
     }
   }
@@ -68,19 +87,20 @@ class DashboardService {
     const shop = await barbeariasRepository.findById(Number(barbeariaId))
     if (!shop) throw new Error('Barbearia não encontrada')
 
-    const start = dateString ? startOfDay(new Date(dateString)) : startOfDay(new Date())
+    const start = dateString ? startOfDay(toDateTime(dateString, '00:00')) : startOfDay(new Date())
     const end = endOfDay(addDays(start, Number(days) - 1))
     const agendamentos = await agendamentosRepository.findByBarbeariaAndPeriod(shop.id, start, end)
+    const dailySlotCapacity = getDailySlotCapacity(shop)
 
     const grouped = Array.from({ length: Number(days) }, (_, index) => {
       const date = addDays(start, index)
       const dateKey = startOfDay(date).toISOString()
       const appointments = agendamentos.filter(
         (item) => startOfDay(new Date(item.data)).toISOString() === dateKey
-      )
+      ).filter((item) => !CANCELLED_STATUSES.has(item.status))
 
       const revenue = sumRevenue(appointments)
-      const freeSlots = Math.max(0, 18 - appointments.length)
+      const freeSlots = Math.max(0, dailySlotCapacity - appointments.length)
 
       return {
         date: dateKey,

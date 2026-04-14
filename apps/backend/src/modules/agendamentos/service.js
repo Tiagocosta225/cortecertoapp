@@ -1,11 +1,53 @@
 const repository = require('./repository')
 const barbeariasRepository = require('../barbearias/repository')
 const servicosRepository = require('../servicos/repository')
-const { startOfDay, endOfDay, toDateTime } = require('../../utils/datetime')
+const prisma = require('../../lib/prisma')
+const { startOfDay, endOfDay, toDateTime, toHourMinute } = require('../../utils/datetime')
+
+const CANCELLED_STATUSES = new Set(['cancelado'])
+
+function toMinutes(time) {
+  const [hour, minute] = String(time || '00:00').split(':').map(Number)
+  return hour * 60 + minute
+}
+
+function rangesOverlap(startA, endA, startB, endB) {
+  return startA < endB && startB < endA
+}
+
+function resolveDateTime(data) {
+  if (data.time) {
+    return toDateTime(data.data, data.time)
+  }
+
+  if (!data.data) {
+    throw new Error('Data inválida')
+  }
+
+  const parsed = new Date(data.data)
+  if (Number.isNaN(parsed.getTime())) {
+    throw new Error('Data inválida')
+  }
+
+  return parsed
+}
 
 class AgendamentosService {
-  async getAgendamentos() {
-    return repository.findAll()
+  async getAgendamentos(filters = {}) {
+    const where = {}
+    if (filters.barbeariaId) {
+      where.barbeariaId = Number(filters.barbeariaId)
+    }
+
+    if (filters.date) {
+      const date = toDateTime(filters.date, '00:00')
+      where.data = {
+        gte: startOfDay(date),
+        lte: endOfDay(date),
+      }
+    }
+
+    return repository.findAll(where)
   }
 
   async getAgendamentoById(id) {
@@ -24,13 +66,29 @@ class AgendamentosService {
   }
 
   async createAgendamento(data) {
+    const barbeariaId = Number(data.barbeariaId)
+    if (!barbeariaId) throw new Error('Barbearia é obrigatória para cadastrar o agendamento')
+
     const servico = await servicosRepository.findById(Number(data.servicoId))
     if (!servico) throw new Error('Serviço não encontrado')
+    if (Number(servico.barbeariaId) !== barbeariaId) {
+      throw new Error('Serviço não encontrado para essa barbearia')
+    }
+
+    const barbearia = await barbeariasRepository.findById(barbeariaId)
+    if (!barbearia) throw new Error('Barbearia não encontrada')
+
+    const dateTime = resolveDateTime(data)
+    await this.validateSlot({
+      barbearia,
+      servico,
+      dateTime,
+    })
 
     return repository.create({
-      data: data.time ? toDateTime(data.data, data.time) : new Date(data.data),
+      data: dateTime,
       clienteId: Number(data.clienteId),
-      barbeariaId: Number(data.barbeariaId),
+      barbeariaId,
       servicoId: Number(data.servicoId),
       status: data.status || 'pendente',
       valorServico: Number(data.valorServico ?? servico.preco ?? 0),
@@ -59,6 +117,7 @@ class AgendamentosService {
   }
 
   async updateAgendamento(id, data) {
+    const current = await this.getAgendamentoById(id)
     const payload = { ...data }
 
     if (payload.data && payload.time) {
@@ -68,11 +127,78 @@ class AgendamentosService {
       payload.data = new Date(payload.data)
     }
 
+    const nextBarbeariaId = Number(payload.barbeariaId || current.barbeariaId)
+    const nextServicoId = Number(payload.servicoId || current.servicoId)
+    const nextDateTime = payload.data ? new Date(payload.data) : current.data
+    const status = payload.status || current.status
+
+    if (!CANCELLED_STATUSES.has(status)) {
+      const [barbearia, servico] = await Promise.all([
+        barbeariasRepository.findById(nextBarbeariaId),
+        servicosRepository.findById(nextServicoId),
+      ])
+
+      if (!barbearia) throw new Error('Barbearia não encontrada')
+      if (!servico) throw new Error('Serviço não encontrado')
+      if (Number(servico.barbeariaId) !== nextBarbeariaId) {
+        throw new Error('Serviço não encontrado para essa barbearia')
+      }
+
+      await this.validateSlot({
+        barbearia,
+        servico,
+        dateTime: nextDateTime,
+        ignoreId: id,
+      })
+    }
+
     return repository.update(id, payload)
   }
 
   async deleteAgendamento(id) {
     return repository.delete(id)
+  }
+
+  async validateSlot({ barbearia, servico, dateTime, ignoreId = null }) {
+    if (Number.isNaN(new Date(dateTime).getTime())) {
+      throw new Error('Data inválida')
+    }
+
+    const newStart = toMinutes(toHourMinute(dateTime))
+    const newEnd = newStart + Number(servico.duracaoMin || 30)
+    const openTime = toMinutes(barbearia.horarioAbertura)
+    const closeTime = toMinutes(barbearia.horarioFechamento)
+
+    if (newStart < openTime || newEnd > closeTime) {
+      throw new Error('Horário fora do expediente da barbearia')
+    }
+
+    const dayAppointments = await prisma.agendamento.findMany({
+      where: {
+        barbeariaId: barbearia.id,
+        data: {
+          gte: startOfDay(dateTime),
+          lte: endOfDay(dateTime),
+        },
+      },
+      include: {
+        servico: true,
+      },
+    })
+
+    const conflicting = dayAppointments.some((item) => {
+      if (Number(item.id) === Number(ignoreId) || CANCELLED_STATUSES.has(item.status)) {
+        return false
+      }
+
+      const appointmentStart = toMinutes(toHourMinute(item.data))
+      const appointmentEnd = appointmentStart + Number(item.servico?.duracaoMin || 30)
+      return rangesOverlap(newStart, newEnd, appointmentStart, appointmentEnd)
+    })
+
+    if (conflicting) {
+      throw new Error('Esse horário já foi reservado')
+    }
   }
 }
 
