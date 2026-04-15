@@ -28,6 +28,27 @@ function normalizeError(error) {
     return new HttpError(400, error.message)
   }
 
+  if (
+    error?.message === 'Email inválido' ||
+    error?.message === 'Email do usuário é obrigatório' ||
+    error?.message === 'Nome do usuário é obrigatório' ||
+    error?.message === 'A senha deve ter pelo menos 6 caracteres'
+  ) {
+    return new HttpError(400, error.message)
+  }
+
+  if (error?.message === 'Já existe um usuário com esse email') {
+    return new HttpError(409, error.message)
+  }
+
+  if (error?.message === 'Cada usuário pode cadastrar apenas uma barbearia') {
+    return new HttpError(409, error.message)
+  }
+
+  if (error?.message === 'Email ou senha inválidos' || error?.message === 'Sessão inválida') {
+    return new HttpError(401, error.message)
+  }
+
   if (error?.message === 'Esse horário já foi reservado') {
     return new HttpError(409, error.message)
   }

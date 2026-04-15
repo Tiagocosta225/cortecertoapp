@@ -2,6 +2,7 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import {
   Select,
   SelectContent,
@@ -126,20 +127,22 @@ export default function Dashboard() {
   const [loadingDashboard, setLoadingDashboard] = useState(false);
 
   const today = useMemo(() => toDateInput(new Date()), []);
+  const [selectedDate, setSelectedDate] = useState(today);
   const selectedShop = shops.find((shop) => String(shop.id) === selectedShopId);
   const todayAgenda = agenda?.dias?.[0];
   const upcomingAppointments = todayAgenda?.agendamentos || [];
+  const selectedDateLabel = new Date(`${selectedDate}T00:00:00`).toLocaleDateString("pt-BR");
 
   const stats = [
     {
-      title: "Agendamentos hoje",
+      title: "Agendamentos do dia",
       value: String(overview?.hoje.agendamentos ?? 0),
       icon: Calendar,
       color: "bg-blue-100 text-blue-600",
       trend: `${overview?.hoje.capacidadeSlots ?? 0} slots no expediente`,
     },
     {
-      title: "Faturamento hoje",
+      title: "Faturamento do dia",
       value: formatCurrency(overview?.hoje.faturamentoPrevisto ?? 0),
       icon: DollarSign,
       color: "bg-green-100 text-green-600",
@@ -161,14 +164,15 @@ export default function Dashboard() {
     },
   ];
 
-  const loadDashboard = useCallback(async (shopId: string) => {
+  const loadDashboard = useCallback(async (shopId: string, date: string) => {
     if (!shopId) return;
 
     setLoadingDashboard(true);
     try {
+      const searchParams = new URLSearchParams({ date });
       const [overviewResponse, agendaResponse, clientesResponse] = await Promise.all([
-        fetch(`/api/dashboard/barbearias/${shopId}/overview`),
-        fetch(`/api/dashboard/barbearias/${shopId}/agenda-inteligente?date=${today}&days=1`),
+        fetch(`/api/dashboard/barbearias/${shopId}/overview?${searchParams.toString()}`),
+        fetch(`/api/dashboard/barbearias/${shopId}/agenda-inteligente?date=${date}&days=1`),
         fetch(`/api/dashboard/barbearias/${shopId}/clientes-insights`),
       ]);
 
@@ -186,7 +190,7 @@ export default function Dashboard() {
     } finally {
       setLoadingDashboard(false);
     }
-  }, [today]);
+  }, []);
 
   useEffect(() => {
     async function loadShops() {
@@ -222,8 +226,8 @@ export default function Dashboard() {
     if (!selectedShopId) return;
 
     window.localStorage.setItem(SELECTED_BARBERSHOP_STORAGE_KEY, selectedShopId);
-    loadDashboard(selectedShopId);
-  }, [loadDashboard, selectedShopId]);
+    loadDashboard(selectedShopId, selectedDate);
+  }, [loadDashboard, selectedDate, selectedShopId]);
 
   return (
     <DashboardLayout>
@@ -233,19 +237,32 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-slate-900">Dashboard</h1>
             <p className="mt-1 text-slate-600">Dados reais da barbearia, agenda, clientes e faturamento.</p>
           </div>
-          <div className="w-full max-w-md">
-            <Select value={selectedShopId} onValueChange={setSelectedShopId} disabled={loading || !shops.length}>
-              <SelectTrigger className="w-full border-slate-200 bg-slate-50">
-                <SelectValue placeholder="Selecione uma barbearia" />
-              </SelectTrigger>
-              <SelectContent>
-                {shops.map((shop) => (
-                  <SelectItem key={shop.id} value={String(shop.id)}>
-                    {shop.nome}{shop.cidade ? ` • ${shop.cidade}` : ""}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+          <div className="grid w-full gap-3 sm:max-w-xl sm:grid-cols-[1fr_180px]">
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Barbearia</label>
+              <Select value={selectedShopId} onValueChange={setSelectedShopId} disabled={loading || !shops.length}>
+                <SelectTrigger className="w-full border-slate-200 bg-slate-50">
+                  <SelectValue placeholder="Selecione uma barbearia" />
+                </SelectTrigger>
+                <SelectContent>
+                  {shops.map((shop) => (
+                    <SelectItem key={shop.id} value={String(shop.id)}>
+                      {shop.nome}{shop.cidade ? ` • ${shop.cidade}` : ""}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div>
+              <label className="mb-2 block text-sm font-medium text-slate-700">Data do dashboard</label>
+              <Input
+                type="date"
+                value={selectedDate}
+                onChange={(event) => setSelectedDate(event.target.value || today)}
+                className="border-slate-200 bg-slate-50"
+                disabled={loadingDashboard}
+              />
+            </div>
           </div>
         </div>
 
@@ -279,9 +296,9 @@ export default function Dashboard() {
           <Card className="p-6 lg:col-span-2">
             <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
               <div>
-                <h2 className="text-xl font-bold text-slate-900">Agendamentos de hoje</h2>
+                <h2 className="text-xl font-bold text-slate-900">Agendamentos do dia</h2>
                 <p className="mt-1 text-sm text-slate-600">
-                  {selectedShop?.nome || "Barbearia"} • {new Date(`${today}T00:00:00`).toLocaleDateString("pt-BR")}
+                  {selectedShop?.nome || "Barbearia"} • {selectedDateLabel}
                 </p>
               </div>
               <Button asChild variant="outline">
@@ -329,7 +346,7 @@ export default function Dashboard() {
 
             {!upcomingAppointments.length && !loadingDashboard && (
               <div className="py-10 text-center text-slate-600">
-                Nenhum agendamento confirmado para hoje.
+                Nenhum agendamento confirmado para o dia selecionado.
               </div>
             )}
           </Card>

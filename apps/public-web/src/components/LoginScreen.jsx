@@ -51,7 +51,7 @@ export default function LoginScreen({ setUser }) {
             <img 
               src={logo} 
               alt="CorteCerto Logo" 
-              className="h-32 w-auto object-contain"
+              className="h-80 w-auto object-contain"
             />
           </div>
           <div>

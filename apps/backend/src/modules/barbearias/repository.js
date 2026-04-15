@@ -1,8 +1,9 @@
 const prisma = require('../../lib/prisma')
 
 class BarbeariasRepository {
-  async findAll() {
+  async findAll(usuarioId = null) {
     return prisma.barbearia.findMany({
+      where: usuarioId ? { usuarioId: Number(usuarioId) } : undefined,
       include: {
         servicos: true,
         clientes: true,
@@ -11,9 +12,12 @@ class BarbeariasRepository {
     })
   }
 
-  async findById(id) {
-    return prisma.barbearia.findUnique({
-      where: { id },
+  async findById(id, usuarioId = null) {
+    return prisma.barbearia.findFirst({
+      where: {
+        id,
+        ...(usuarioId ? { usuarioId: Number(usuarioId) } : {}),
+      },
       include: {
         servicos: { orderBy: [{ destaqueLink: 'desc' }, { ordemLink: 'asc' }] },
         clientes: true,
@@ -34,6 +38,12 @@ class BarbeariasRepository {
     return prisma.barbearia.findUnique({
       where: { slug },
       select: { id: true },
+    })
+  }
+
+  async countByUsuarioId(usuarioId) {
+    return prisma.barbearia.count({
+      where: { usuarioId: Number(usuarioId) },
     })
   }
 

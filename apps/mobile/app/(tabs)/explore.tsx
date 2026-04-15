@@ -1,112 +1,120 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import { useCallback, useEffect, useState } from 'react';
+import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { useAuth } from '@/contexts/auth-context';
+import { apiFetch } from '@/lib/api';
 
-import { ExternalLink } from '@/components/external-link';
-import ParallaxScrollView from '@/components/parallax-scroll-view';
-import { ThemedText } from '@/components/themed-text';
-import { ThemedView } from '@/components/themed-view';
-import { Collapsible } from '@/components/ui/collapsible';
-import { IconSymbol } from '@/components/ui/icon-symbol';
-import { Fonts } from '@/constants/theme';
+type Barbearia = {
+  id: number;
+  nome: string;
+  cidade?: string | null;
+  slug?: string;
+  telefone?: string | null;
+  endereco?: string | null;
+  ativa: boolean;
+};
 
-export default function TabTwoScreen() {
+export default function ProfileMobile() {
+  const { user, signOut } = useAuth();
+  const [shop, setShop] = useState<Barbearia | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState('');
+
+  const loadData = useCallback(async () => {
+    setError('');
+    const shops = await apiFetch<Barbearia[]>('/barbearias');
+    setShop(shops[0] || null);
+  }, []);
+
+  useEffect(() => {
+    setLoading(true);
+    loadData()
+      .catch((loadError) => setError(loadError instanceof Error ? loadError.message : 'Falha ao carregar perfil.'))
+      .finally(() => setLoading(false));
+  }, [loadData]);
+
+  async function refresh() {
+    setRefreshing(true);
+    try {
+      await loadData();
+    } catch (loadError) {
+      setError(loadError instanceof Error ? loadError.message : 'Falha ao atualizar perfil.');
+    } finally {
+      setRefreshing(false);
+    }
+  }
+
+  if (loading) {
+    return (
+      <View style={styles.center}>
+        <ActivityIndicator color="#0066FF" />
+      </View>
+    );
+  }
+
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#D0D0D0', dark: '#353636' }}
-      headerImage={
-        <IconSymbol
-          size={310}
-          color="#808080"
-          name="chevron.left.forwardslash.chevron.right"
-          style={styles.headerImage}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText
-          type="title"
-          style={{
-            fontFamily: Fonts.rounded,
-          }}>
-          Explore
-        </ThemedText>
-      </ThemedView>
-      <ThemedText>This app includes example code to help you get started.</ThemedText>
-      <Collapsible title="File-based routing">
-        <ThemedText>
-          This app has two screens:{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">app/(tabs)/explore.tsx</ThemedText>
-        </ThemedText>
-        <ThemedText>
-          The layout file in <ThemedText type="defaultSemiBold">app/(tabs)/_layout.tsx</ThemedText>{' '}
-          sets up the tab navigator.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/router/introduction">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Android, iOS, and web support">
-        <ThemedText>
-          You can open this project on Android, iOS, and the web. To open the web version, press{' '}
-          <ThemedText type="defaultSemiBold">w</ThemedText> in the terminal running this project.
-        </ThemedText>
-      </Collapsible>
-      <Collapsible title="Images">
-        <ThemedText>
-          For static images, you can use the <ThemedText type="defaultSemiBold">@2x</ThemedText> and{' '}
-          <ThemedText type="defaultSemiBold">@3x</ThemedText> suffixes to provide files for
-          different screen densities
-        </ThemedText>
-        <Image
-          source={require('@/assets/images/logo-cortecertoapp.png')}
-          style={{ width: 100, height: 100, alignSelf: 'center' }}
-        />
-        <ExternalLink href="https://reactnative.dev/docs/images">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Light and dark mode components">
-        <ThemedText>
-          This template has light and dark mode support. The{' '}
-          <ThemedText type="defaultSemiBold">useColorScheme()</ThemedText> hook lets you inspect
-          what the user&apos;s current color scheme is, and so you can adjust UI colors accordingly.
-        </ThemedText>
-        <ExternalLink href="https://docs.expo.dev/develop/user-interface/color-themes/">
-          <ThemedText type="link">Learn more</ThemedText>
-        </ExternalLink>
-      </Collapsible>
-      <Collapsible title="Animations">
-        <ThemedText>
-          This template includes an example of an animated component. The{' '}
-          <ThemedText type="defaultSemiBold">components/HelloWave.tsx</ThemedText> component uses
-          the powerful{' '}
-          <ThemedText type="defaultSemiBold" style={{ fontFamily: Fonts.mono }}>
-            react-native-reanimated
-          </ThemedText>{' '}
-          library to create a waving hand animation.
-        </ThemedText>
-        {Platform.select({
-          ios: (
-            <ThemedText>
-              The <ThemedText type="defaultSemiBold">components/ParallaxScrollView.tsx</ThemedText>{' '}
-              component provides a parallax effect for the header image.
-            </ThemedText>
-          ),
-        })}
-      </Collapsible>
-    </ParallaxScrollView>
+    <ScrollView
+      style={styles.container}
+      contentContainerStyle={styles.content}
+      refreshControl={<RefreshControl refreshing={refreshing} onRefresh={refresh} />}
+    >
+      <Text style={styles.title}>Perfil</Text>
+      <Text style={styles.subtitle}>Sessão autenticada com dados reais do CorteCertoApp.</Text>
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Usuário logado</Text>
+        <Info label="Nome" value={user?.nome || '-'} />
+        <Info label="E-mail" value={user?.email || '-'} />
+        <Info label="Papel" value={user?.papel || '-'} />
+      </View>
+
+      <View style={styles.card}>
+        <Text style={styles.cardTitle}>Barbearia do perfil</Text>
+        {shop ? (
+          <>
+            <Info label="Nome" value={shop.nome} />
+            <Info label="Cidade" value={shop.cidade || '-'} />
+            <Info label="Telefone" value={shop.telefone || '-'} />
+            <Info label="Endereço" value={shop.endereco || '-'} />
+            <Info label="Status" value={shop.ativa ? 'Ativa' : 'Inativa'} />
+            <Info label="Link público" value={shop.slug ? `/${shop.slug}` : 'Sem slug'} />
+          </>
+        ) : (
+          <Text style={styles.muted}>Nenhuma barbearia vinculada a este usuário. Cadastre uma no painel admin.</Text>
+        )}
+      </View>
+
+      <Pressable style={styles.logoutButton} onPress={signOut}>
+        <Text style={styles.logoutText}>Sair da conta</Text>
+      </Pressable>
+    </ScrollView>
+  );
+}
+
+function Info({ label, value }: { label: string; value: string }) {
+  return (
+    <View style={styles.infoRow}>
+      <Text style={styles.infoLabel}>{label}</Text>
+      <Text style={styles.infoValue}>{value}</Text>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  headerImage: {
-    color: '#808080',
-    bottom: -90,
-    left: -35,
-    position: 'absolute',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    gap: 8,
-  },
+  center: { flex: 1, alignItems: 'center', justifyContent: 'center', backgroundColor: '#F8FAFC' },
+  container: { flex: 1, backgroundColor: '#F8FAFC' },
+  content: { padding: 20, paddingBottom: 36 },
+  title: { color: '#0F172A', fontSize: 30, fontWeight: '800' },
+  subtitle: { marginTop: 4, marginBottom: 18, color: '#64748B', lineHeight: 22 },
+  error: { marginBottom: 12, borderRadius: 8, backgroundColor: '#FEF2F2', color: '#DC2626', padding: 12, fontWeight: '700' },
+  card: { borderRadius: 8, borderWidth: 1, borderColor: '#E2E8F0', backgroundColor: '#FFFFFF', padding: 16, marginBottom: 14 },
+  cardTitle: { color: '#0F172A', fontSize: 18, fontWeight: '800', marginBottom: 10 },
+  infoRow: { borderTopWidth: 1, borderTopColor: '#F1F5F9', paddingVertical: 10 },
+  infoLabel: { color: '#64748B', fontSize: 12, fontWeight: '700', textTransform: 'uppercase' },
+  infoValue: { marginTop: 4, color: '#0F172A', fontWeight: '700' },
+  muted: { color: '#64748B', lineHeight: 22 },
+  logoutButton: { alignItems: 'center', borderRadius: 8, backgroundColor: '#0F172A', paddingVertical: 15 },
+  logoutText: { color: '#FFFFFF', fontWeight: '900' },
 });

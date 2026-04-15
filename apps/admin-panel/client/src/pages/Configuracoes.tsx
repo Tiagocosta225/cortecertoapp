@@ -93,6 +93,7 @@ export default function Configuracoes() {
 
   const publicBaseUrl = useMemo(() => getPublicBaseUrl(), []);
   const publicBookingLink = slug ? `${publicBaseUrl}/${slug}` : "";
+  const canCreateNewShop = shops.length === 0;
 
   const applyShopToForm = useCallback((shop: any) => {
     setShopId(shop.id);
@@ -294,21 +295,27 @@ export default function Configuracoes() {
                       {item.nome}{item.cidade ? ` • ${item.cidade}` : ""}
                     </SelectItem>
                   ))}
-                  <SelectItem value="new">Nova barbearia</SelectItem>
+                  {canCreateNewShop && <SelectItem value="new">Nova barbearia</SelectItem>}
                 </SelectContent>
               </Select>
             </div>
 
-            <Button
-              type="button"
-              variant="outline"
-              className="border-blue-200 text-blue-700 hover:bg-blue-50"
-              onClick={() => setSelectedShopId("new")}
-              disabled={savingShop}
-            >
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Nova barbearia
-            </Button>
+            {canCreateNewShop ? (
+              <Button
+                type="button"
+                variant="outline"
+                className="border-blue-200 text-blue-700 hover:bg-blue-50"
+                onClick={() => setSelectedShopId("new")}
+                disabled={savingShop}
+              >
+                <PlusCircle className="mr-2 h-4 w-4" />
+                Nova barbearia
+              </Button>
+            ) : (
+              <p className="max-w-sm text-sm leading-6 text-slate-600">
+                Cada usuário pode manter uma barbearia. Edite os dados cadastrados neste perfil.
+              </p>
+            )}
           </div>
         </Card>
 

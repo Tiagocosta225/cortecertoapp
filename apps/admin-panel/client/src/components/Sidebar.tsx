@@ -8,6 +8,19 @@ import logo from "@/assets/logo-cortecertoapp.png";
 export function Sidebar() {
   const [location] = useLocation();
 
+  async function handleLogout() {
+    const token = window.localStorage.getItem("cortecerto.authToken");
+    if (token) {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+    window.localStorage.removeItem("cortecerto.authToken");
+    window.localStorage.removeItem("cortecerto.authUser");
+    window.location.reload();
+  }
+
   const navItems = [
     { href: "/", label: "Dashboard", icon: BarChart3 },
     { href: "/agenda", label: "Agenda", icon: Calendar },
@@ -20,8 +33,8 @@ export function Sidebar() {
     <div className="w-64 bg-[linear-gradient(180deg,#0A0E27_0%,#101735_100%)] text-white flex flex-col border-r border-white/10">
       {/* Logo */}
       <div className="p-6 border-b border-white/10">
-        <div className="flex items-center gap-3">
-          <img src={logo} alt="CorteCertoApp" className="h-12 w-auto" />
+        <div className="flex min-h-72 items-center justify-center">
+          <img src={logo} alt="CorteCertoApp" className="max-h-72 max-w-full object-contain" />
         </div>
       </div>
 
@@ -53,6 +66,7 @@ export function Sidebar() {
         <Button
           variant="ghost"
           className="w-full justify-start text-slate-300 hover:text-white hover:bg-white/8"
+          onClick={handleLogout}
         >
           <LogOut className="w-5 h-5 mr-3" />
           Sair

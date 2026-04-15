@@ -40,6 +40,16 @@ app.use(errorMiddleware)
 
 const port = Number(process.env.PORT || 3000)
 
-app.listen(port, () => {
+const server = app.listen(port, () => {
   console.log(`Servidor rodando na porta ${port}`)
 })
+
+function shutdown(signal) {
+  server.close(() => {
+    console.log(`Servidor encerrado por ${signal}`)
+    process.exit(0)
+  })
+}
+
+process.on('SIGINT', () => shutdown('SIGINT'))
+process.on('SIGTERM', () => shutdown('SIGTERM'))

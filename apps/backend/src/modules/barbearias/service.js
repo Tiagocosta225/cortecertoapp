@@ -18,12 +18,12 @@ async function buildUniqueSlug(value, ignoredBarbeariaId = null) {
 }
 
 class BarbeariasService {
-  async getBarbearias() {
-    return repository.findAll()
+  async getBarbearias(usuarioId = null) {
+    return repository.findAll(usuarioId)
   }
 
-  async getBarbeariaById(id) {
-    const barbearia = await repository.findById(id)
+  async getBarbeariaById(id, usuarioId = null) {
+    const barbearia = await repository.findById(id, usuarioId)
     if (!barbearia) throw new Error('Barbearia não encontrada')
     return barbearia
   }
@@ -34,10 +34,17 @@ class BarbeariasService {
     return barbearia
   }
 
-  async createBarbearia(data) {
+  async createBarbearia(data, usuarioId = null) {
     const nome = String(data.nome || '').trim()
     if (!nome) {
       throw new Error('Nome da barbearia é obrigatório')
+    }
+
+    if (usuarioId) {
+      const totalBarbearias = await repository.countByUsuarioId(usuarioId)
+      if (totalBarbearias > 0) {
+        throw new Error('Cada usuário pode cadastrar apenas uma barbearia')
+      }
     }
 
     const slug = await buildUniqueSlug(data.slug || nome)
@@ -59,18 +66,23 @@ class BarbeariasService {
       taxaReservaPadrao: Number(data.taxaReservaPadrao || 0),
       tempoRetornoDias: Number(data.tempoRetornoDias || 20),
       metaSemanal: Number(data.metaSemanal || 0),
+      usuarioId: usuarioId ? Number(usuarioId) : null,
     })
   }
 
-  async updateBarbearia(id, data) {
+  async updateBarbearia(id, data, usuarioId = null) {
+    await this.getBarbeariaById(id, usuarioId)
     if (data.slug || data.nome) {
       data.slug = await buildUniqueSlug(data.slug || data.nome, id)
     }
 
+    delete data.usuarioId
+
     return repository.update(id, data)
   }
 
-  async deleteBarbearia(id) {
+  async deleteBarbearia(id, usuarioId = null) {
+    await this.getBarbeariaById(id, usuarioId)
     return repository.delete(id)
   }
 }

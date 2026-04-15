@@ -33,10 +33,13 @@ function resolveDateTime(data) {
 }
 
 class AgendamentosService {
-  async getAgendamentos(filters = {}) {
+  async getAgendamentos(filters = {}, usuarioId = null) {
     const where = {}
     if (filters.barbeariaId) {
       where.barbeariaId = Number(filters.barbeariaId)
+    }
+    if (usuarioId) {
+      where.barbearia = { usuarioId: Number(usuarioId) }
     }
 
     if (filters.date) {
@@ -50,9 +53,11 @@ class AgendamentosService {
     return repository.findAll(where)
   }
 
-  async getAgendamentoById(id) {
+  async getAgendamentoById(id, usuarioId = null) {
     const agendamento = await repository.findById(id)
-    if (!agendamento) throw new Error('Agendamento não encontrado')
+    if (!agendamento || (usuarioId && Number(agendamento.barbearia?.usuarioId) !== Number(usuarioId))) {
+      throw new Error('Agendamento não encontrado')
+    }
     return agendamento
   }
 
@@ -65,7 +70,7 @@ class AgendamentosService {
     )
   }
 
-  async createAgendamento(data) {
+  async createAgendamento(data, usuarioId = null) {
     const barbeariaId = Number(data.barbeariaId)
     if (!barbeariaId) throw new Error('Barbearia é obrigatória para cadastrar o agendamento')
 
@@ -75,7 +80,7 @@ class AgendamentosService {
       throw new Error('Serviço não encontrado para essa barbearia')
     }
 
-    const barbearia = await barbeariasRepository.findById(barbeariaId)
+    const barbearia = await barbeariasRepository.findById(barbeariaId, usuarioId)
     if (!barbearia) throw new Error('Barbearia não encontrada')
 
     const dateTime = resolveDateTime(data)
@@ -116,8 +121,8 @@ class AgendamentosService {
     })
   }
 
-  async updateAgendamento(id, data) {
-    const current = await this.getAgendamentoById(id)
+  async updateAgendamento(id, data, usuarioId = null) {
+    const current = await this.getAgendamentoById(id, usuarioId)
     const payload = { ...data }
 
     if (payload.data && payload.time) {
@@ -134,7 +139,7 @@ class AgendamentosService {
 
     if (!CANCELLED_STATUSES.has(status)) {
       const [barbearia, servico] = await Promise.all([
-        barbeariasRepository.findById(nextBarbeariaId),
+        barbeariasRepository.findById(nextBarbeariaId, usuarioId),
         servicosRepository.findById(nextServicoId),
       ])
 
@@ -155,7 +160,8 @@ class AgendamentosService {
     return repository.update(id, payload)
   }
 
-  async deleteAgendamento(id) {
+  async deleteAgendamento(id, usuarioId = null) {
+    await this.getAgendamentoById(id, usuarioId)
     return repository.delete(id)
   }
 

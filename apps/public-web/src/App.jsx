@@ -111,7 +111,7 @@ function MarketingHome() {
     <div className="min-h-screen bg-background text-foreground">
       <div className="mx-auto flex min-h-screen w-full max-w-7xl flex-col px-4 py-6 md:px-6 lg:px-8">
         <header className="flex items-center justify-between gap-4 border-b border-border/80 pb-5">
-          <img src={logo} alt="CorteCertoApp" className="h-14 w-auto object-contain md:h-16" />
+          <img src={logo} alt="CorteCertoApp" className="h-40 w-auto object-contain md:h-48" />
           <div className="hidden items-center gap-6 text-sm text-muted-foreground lg:flex">
             <a href="#beneficios">Benefícios</a>
             <a href="#como-funciona">Como funciona</a>
@@ -168,7 +168,7 @@ function MarketingHome() {
                 <CardContent className="space-y-6 p-0">
                   <div className="bg-[radial-gradient(circle_at_top_left,_rgba(0,102,255,0.18),_transparent_45%),linear-gradient(180deg,#ffffff_0%,#eef4ff_100%)] p-6 md:p-7">
                     <div className="flex items-center gap-3">
-                      <img src={logo} alt="CorteCertoApp" className="h-12 w-auto object-contain" />
+                      <img src={logo} alt="CorteCertoApp" className="h-32 w-auto object-contain md:h-40" />
                       <div>
                         <p className="text-sm text-muted-foreground">Exemplo de endereço</p>
                         <p className="font-semibold">cortecerto.app/barbearia-do-joao</p>
@@ -755,8 +755,8 @@ function BookingLinkPage() {
       <header className="sticky top-0 z-10 border-b border-border bg-card/95 px-4 py-4 shadow-sm backdrop-blur">
         <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
           <div className="flex min-w-0 items-center gap-3">
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-border bg-white">
-              <img src={logo} alt="CorteCertoApp" className="h-8 w-auto object-contain" />
+            <div className="flex h-64 w-64 shrink-0 items-center justify-center rounded-lg border border-border bg-white">
+              <img src={logo} alt="CorteCertoApp" className="h-48 w-auto object-contain" />
             </div>
             <div className="min-w-0">
               <p className="truncate font-semibold">{shop.nome}</p>
@@ -774,14 +774,14 @@ function BookingLinkPage() {
           {messages.map((message, index) => (
             <div key={`${message.text}-${index}`} className={`flex items-end gap-3 ${message.from === 'human' ? 'justify-end' : ''}`}>
               {message.from === 'bot' && (
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary text-sm font-bold text-primary-foreground">
+                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-sky-200 bg-sky-100 text-sm font-bold text-sky-700">
                   CC
                 </div>
               )}
-              <div className={`max-w-[84%] rounded-lg px-5 py-4 text-sm leading-6 shadow-lg ${
+              <div className={`max-w-[84%] rounded-lg px-5 py-4 text-sm leading-6 shadow-sm ${
                 message.from === 'human'
-                  ? 'border border-border bg-card text-foreground'
-                  : 'bg-primary text-primary-foreground'
+                  ? 'border border-sky-100 bg-white text-slate-800'
+                  : 'border border-sky-200 bg-sky-100 text-sky-900'
               }`}>
                 {message.text}
               </div>

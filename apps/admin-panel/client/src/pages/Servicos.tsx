@@ -78,6 +78,14 @@ function formatCurrency(value: number) {
   }).format(Number(value || 0));
 }
 
+function toWholeReais(value: unknown) {
+  const normalized = String(value ?? "0").includes(",")
+    ? String(value ?? "0").replace(/\./g, "").replace(",", ".")
+    : String(value ?? "0");
+  const parsed = Number(normalized);
+  return Number.isFinite(parsed) ? Math.max(0, Math.round(parsed)) : 0;
+}
+
 async function parseResponse(response: Response) {
   const contentType = response.headers.get("content-type") || "";
   const payload = contentType.includes("application/json") ? await response.json() : null;
@@ -180,9 +188,9 @@ export default function Servicos() {
     setForm({
       nome: service.nome || "",
       descricao: service.descricao || "",
-      preco: Number(service.preco || 0),
+      preco: toWholeReais(service.preco),
       duracaoMin: Number(service.duracaoMin || 30),
-      depositoAntecipado: Number(service.depositoAntecipado || 0),
+      depositoAntecipado: toWholeReais(service.depositoAntecipado),
       ativo: service.ativo ?? true,
       destaqueLink: service.destaqueLink ?? false,
       ordemLink: Number(service.ordemLink || 0),
@@ -209,13 +217,13 @@ export default function Servicos() {
       const payload = {
         nome: form.nome.trim(),
         descricao: form.descricao.trim() || null,
-        preco: Number(form.preco || 0),
+        preco: toWholeReais(form.preco),
         duracaoMin: Number(form.duracaoMin || 30),
         barbeariaId: Number(selectedShopId),
         ativo: form.ativo,
         destaqueLink: form.destaqueLink,
         ordemLink: Number(form.ordemLink || 0),
-        depositoAntecipado: Number(form.depositoAntecipado || 0),
+        depositoAntecipado: toWholeReais(form.depositoAntecipado),
         categoria: form.categoria || "servico",
       };
 
@@ -412,7 +420,16 @@ export default function Servicos() {
               </div>
               <div className="space-y-2">
                 <Label>Preço</Label>
-                <Input type="number" min="0" step="0.01" value={form.preco} onChange={(event) => updateField("preco", Number(event.target.value || 0))} required />
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.preco}
+                  onChange={(event) => updateField("preco", toWholeReais(event.target.value))}
+                  onBlur={() => updateField("preco", toWholeReais(form.preco))}
+                  required
+                />
+                <p className="text-xs text-slate-500">Informe apenas reais inteiros. Exemplo: {formatCurrency(form.preco)}</p>
               </div>
               <div className="space-y-2">
                 <Label>Duração em minutos</Label>
@@ -420,7 +437,15 @@ export default function Servicos() {
               </div>
               <div className="space-y-2">
                 <Label>Sinal antecipado</Label>
-                <Input type="number" min="0" step="0.01" value={form.depositoAntecipado} onChange={(event) => updateField("depositoAntecipado", Number(event.target.value || 0))} />
+                <Input
+                  type="number"
+                  min="0"
+                  step="1"
+                  value={form.depositoAntecipado}
+                  onChange={(event) => updateField("depositoAntecipado", toWholeReais(event.target.value))}
+                  onBlur={() => updateField("depositoAntecipado", toWholeReais(form.depositoAntecipado))}
+                />
+                <p className="text-xs text-slate-500">Informe apenas reais inteiros. Exemplo: {formatCurrency(form.depositoAntecipado)}</p>
               </div>
               <div className="space-y-2">
                 <Label>Ordem no link</Label>

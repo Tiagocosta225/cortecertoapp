@@ -1,8 +1,9 @@
 const prisma = require('../../lib/prisma')
 
 class ServicosRepository {
-  async findAll() {
+  async findAll(where = {}) {
     return prisma.servico.findMany({
+      where,
       include: {
         barbearia: true,
         agendamentos: true,

@@ -2,18 +2,23 @@ const repository = require('./repository')
 const barbeariasRepository = require('../barbearias/repository')
 
 class ClientesService {
-  async getClientes(filters = {}) {
+  async getClientes(filters = {}, usuarioId = null) {
     const where = {}
     if (filters.barbeariaId) {
       where.barbeariaId = Number(filters.barbeariaId)
+    }
+    if (usuarioId) {
+      where.barbearia = { usuarioId: Number(usuarioId) }
     }
 
     return repository.getClientes(where)
   }
 
-  async getClienteById(id) {
+  async getClienteById(id, usuarioId = null) {
     const cliente = await repository.getClienteById(id)
-    if (!cliente) throw new Error('Cliente não encontrado')
+    if (!cliente || (usuarioId && Number(cliente.barbearia?.usuarioId) !== Number(usuarioId))) {
+      throw new Error('Cliente não encontrado')
+    }
     return cliente
   }
 
@@ -21,7 +26,7 @@ class ClientesService {
     return repository.findByBarbeariaId(Number(barbeariaId))
   }
 
-  async createCliente(data) {
+  async createCliente(data, usuarioId = null) {
     const nome = String(data.nome || '').trim()
     const telefone = String(data.telefone || '').trim()
     const barbeariaId = Number(data.barbeariaId)
@@ -30,7 +35,7 @@ class ClientesService {
     if (!telefone) throw new Error('Telefone do cliente é obrigatório')
     if (!barbeariaId) throw new Error('Barbearia é obrigatória para cadastrar o cliente')
 
-    const barbearia = await barbeariasRepository.findById(barbeariaId)
+    const barbearia = await barbeariasRepository.findById(barbeariaId, usuarioId)
     if (!barbearia) throw new Error('Barbearia não encontrada')
 
     return repository.createCliente({
@@ -71,7 +76,8 @@ class ClientesService {
     })
   }
 
-  async updateCliente(id, data) {
+  async updateCliente(id, data, usuarioId = null) {
+    await this.getClienteById(id, usuarioId)
     const payload = { ...data }
 
     if (payload.nome !== undefined) {
@@ -91,7 +97,7 @@ class ClientesService {
     if (payload.barbeariaId !== undefined) {
       payload.barbeariaId = Number(payload.barbeariaId)
       if (!payload.barbeariaId) throw new Error('Barbearia é obrigatória para cadastrar o cliente')
-      const barbearia = await barbeariasRepository.findById(payload.barbeariaId)
+      const barbearia = await barbeariasRepository.findById(payload.barbeariaId, usuarioId)
       if (!barbearia) throw new Error('Barbearia não encontrada')
     }
 
@@ -102,7 +108,8 @@ class ClientesService {
     return repository.updateCliente(id, payload)
   }
 
-  async deleteCliente(id) {
+  async deleteCliente(id, usuarioId = null) {
+    await this.getClienteById(id, usuarioId)
     return repository.deleteCliente(id)
   }
 }

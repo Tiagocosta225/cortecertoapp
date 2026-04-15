@@ -10,6 +10,22 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export function Header() {
+  const storedUser = window.localStorage.getItem("cortecerto.authUser");
+  const user = storedUser ? JSON.parse(storedUser) : null;
+
+  async function handleLogout() {
+    const token = window.localStorage.getItem("cortecerto.authToken");
+    if (token) {
+      await fetch("/api/auth/logout", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${token}` },
+      }).catch(() => {});
+    }
+    window.localStorage.removeItem("cortecerto.authToken");
+    window.localStorage.removeItem("cortecerto.authUser");
+    window.location.reload();
+  }
+
   return (
     <header className="bg-white border-b border-slate-200 px-6 py-4 flex items-center justify-between">
       {/* Search Bar */}
@@ -42,15 +58,15 @@ export function Header() {
               <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center text-white">
                 <User className="w-4 h-4" />
               </div>
-              <span className="text-sm font-medium">João Silva</span>
+              <span className="text-sm font-medium">{user?.nome || "Usuário"}</span>
               <ChevronDown className="w-4 h-4 text-slate-400" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
-            <DropdownMenuItem>Meu Perfil</DropdownMenuItem>
+            <DropdownMenuItem>{user?.email || "Meu perfil"}</DropdownMenuItem>
             <DropdownMenuItem>Configurações</DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem className="text-red-600">Sair</DropdownMenuItem>
+            <DropdownMenuItem className="text-red-600" onClick={handleLogout}>Sair</DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
       </div>

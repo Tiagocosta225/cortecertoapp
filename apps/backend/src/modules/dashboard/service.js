@@ -28,18 +28,18 @@ function daysBetween(dateA, dateB) {
 }
 
 class DashboardService {
-  async getOverview(barbeariaId) {
-    const shop = await barbeariasRepository.findById(Number(barbeariaId))
+  async getOverview(barbeariaId, dateString = null, usuarioId = null) {
+    const shop = await barbeariasRepository.findById(Number(barbeariaId), usuarioId)
     if (!shop) throw new Error('Barbearia não encontrada')
 
-    const now = new Date()
-    const todayStart = startOfDay(now)
-    const todayEnd = endOfDay(now)
-    const weekEnd = endOfDay(addDays(now, 6))
+    const referenceDate = dateString ? toDateTime(dateString, '00:00') : new Date()
+    const selectedDayStart = startOfDay(referenceDate)
+    const selectedDayEnd = endOfDay(referenceDate)
+    const weekEnd = endOfDay(addDays(referenceDate, 6))
 
     const [agendamentosHoje, agendamentosSemana, clientes] = await Promise.all([
-      agendamentosRepository.findByBarbeariaAndPeriod(shop.id, todayStart, todayEnd),
-      agendamentosRepository.findByBarbeariaAndPeriod(shop.id, todayStart, weekEnd),
+      agendamentosRepository.findByBarbeariaAndPeriod(shop.id, selectedDayStart, selectedDayEnd),
+      agendamentosRepository.findByBarbeariaAndPeriod(shop.id, selectedDayStart, weekEnd),
       clientesRepository.findByBarbeariaId(shop.id),
     ])
     const activeAgendamentosHoje = agendamentosHoje.filter((item) => !CANCELLED_STATUSES.has(item.status))
@@ -49,7 +49,7 @@ class DashboardService {
     const clientesEmRisco = clientes.filter((cliente) => {
       if (!cliente.agendamentos.length) return true
       const ultimaVisita = new Date(cliente.agendamentos[0].data)
-      return daysBetween(now, ultimaVisita) >= shop.tempoRetornoDias
+      return daysBetween(referenceDate, ultimaVisita) >= shop.tempoRetornoDias
     })
 
     return {
@@ -83,8 +83,8 @@ class DashboardService {
     }
   }
 
-  async getAgendaInteligente(barbeariaId, dateString, days = 2) {
-    const shop = await barbeariasRepository.findById(Number(barbeariaId))
+  async getAgendaInteligente(barbeariaId, dateString, days = 2, usuarioId = null) {
+    const shop = await barbeariasRepository.findById(Number(barbeariaId), usuarioId)
     if (!shop) throw new Error('Barbearia não encontrada')
 
     const start = dateString ? startOfDay(toDateTime(dateString, '00:00')) : startOfDay(new Date())
@@ -129,8 +129,8 @@ class DashboardService {
     }
   }
 
-  async getClientesInsights(barbeariaId) {
-    const shop = await barbeariasRepository.findById(Number(barbeariaId))
+  async getClientesInsights(barbeariaId, usuarioId = null) {
+    const shop = await barbeariasRepository.findById(Number(barbeariaId), usuarioId)
     if (!shop) throw new Error('Barbearia não encontrada')
 
     const clientes = await clientesRepository.findByBarbeariaId(shop.id)
@@ -179,8 +179,8 @@ class DashboardService {
     }
   }
 
-  async getServicosInsights(barbeariaId) {
-    const shop = await barbeariasRepository.findById(Number(barbeariaId))
+  async getServicosInsights(barbeariaId, usuarioId = null) {
+    const shop = await barbeariasRepository.findById(Number(barbeariaId), usuarioId)
     if (!shop) throw new Error('Barbearia não encontrada')
 
     const servicos = await servicosRepository.findByBarbeariaId(shop.id)

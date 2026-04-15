@@ -56,7 +56,7 @@ function createCorsMiddleware() {
 
     res.setHeader('Access-Control-Allow-Origin', origin)
     res.setHeader('Vary', 'Origin')
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Api-Key')
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, X-Admin-Api-Key, Authorization')
     res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PUT,PATCH,DELETE,OPTIONS')
 
     if (req.method === 'OPTIONS') {

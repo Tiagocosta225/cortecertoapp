@@ -27,9 +27,34 @@ model Barbearia {
   metaSemanal        Float         @default(0)
   createdAt          DateTime      @default(now())
   updatedAt          DateTime      @updatedAt
+  usuarioId          Int?
   agendamentos       Agendamento[]
   clientes           Cliente[]
   servicos           Servico[]
+  usuario            Usuario?      @relation(fields: [usuarioId], references: [id], onDelete: SetNull)
+}
+
+model Usuario {
+  id           Int             @id @default(autoincrement())
+  nome         String
+  email        String          @unique
+  telefone     String?
+  senhaHash    String
+  papel        String          @default("admin")
+  ativo        Boolean         @default(true)
+  createdAt    DateTime        @default(now())
+  updatedAt    DateTime        @updatedAt
+  barbearias   Barbearia[]
+  sessoes      SessaoUsuario[]
+}
+
+model SessaoUsuario {
+  id        Int      @id @default(autoincrement())
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  usuarioId Int
+  usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
 }
 
 model Cliente {
