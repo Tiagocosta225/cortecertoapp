@@ -2,6 +2,7 @@ const prisma = require('../../lib/prisma')
 const barbeariasRepository = require('../barbearias/repository')
 const clientesService = require('../clientes/service')
 const agendamentosService = require('../agendamentos/service')
+const BillingService = require('../billing/service')
 const { startOfDay, endOfDay, toDateTime, toHourMinute } = require('../../utils/datetime')
 
 const CANCELLED_STATUSES = new Set(['cancelado'])
@@ -45,12 +46,20 @@ function findPublicServico(barbearia, servicoId) {
   return barbearia.servicos.find((servico) => Number(servico.id) === Number(servicoId))
 }
 
+async function ensurePublicBookingEnabled(barbearia) {
+  const active = await BillingService.hasActiveSubscriptionForBarbearia(barbearia.id)
+  if (!active) {
+    throw new Error('Assinatura da barbearia inativa')
+  }
+}
+
 class PublicoService {
   async getBarbeariaPublica(slug) {
     const barbearia = await barbeariasRepository.findBySlug(slug)
     if (!barbearia || !barbearia.ativa) {
       throw new Error('Barbearia não encontrada')
     }
+    await ensurePublicBookingEnabled(barbearia)
 
     const today = new Date()
     const weekStart = startOfDay(today)
@@ -102,6 +111,7 @@ class PublicoService {
     if (!barbearia || !barbearia.ativa) {
       throw new Error('Barbearia não encontrada')
     }
+    await ensurePublicBookingEnabled(barbearia)
 
     const selectedServico = findPublicServico(barbearia, servicoId)
     if (servicoId && !selectedServico) {
@@ -164,6 +174,7 @@ class PublicoService {
     if (!barbearia || !barbearia.ativa) {
       throw new Error('Barbearia não encontrada')
     }
+    await ensurePublicBookingEnabled(barbearia)
 
     const servico = findPublicServico(barbearia, payload.servicoId)
     if (!servico) {

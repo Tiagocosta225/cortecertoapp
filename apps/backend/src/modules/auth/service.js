@@ -1,5 +1,6 @@
 const crypto = require('crypto')
 const prisma = require('../../lib/prisma')
+const BillingService = require('../billing/service')
 
 const SESSION_DAYS = 7
 const SCRYPT_KEY_LENGTH = 64
@@ -99,6 +100,7 @@ class AuthService {
         senhaHash: hashPassword(senha),
       },
     })
+    await BillingService.createTrialForUser(usuario.id)
     const session = await createSession(usuario.id)
 
     return {

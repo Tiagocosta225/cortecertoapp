@@ -44,6 +44,7 @@ model Usuario {
   ativo        Boolean         @default(true)
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
+  assinaturas  Assinatura[]
   barbearias   Barbearia[]
   sessoes      SessaoUsuario[]
 }
@@ -55,6 +56,61 @@ model SessaoUsuario {
   createdAt DateTime @default(now())
   usuarioId Int
   usuario   Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+}
+
+model Plano {
+  id          Int          @id @default(autoincrement())
+  codigo      String       @unique
+  nome        String
+  descricao   String?
+  preco       Float
+  periodo     String       @default("mensal")
+  ativo       Boolean      @default(true)
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  assinaturas Assinatura[]
+}
+
+model Assinatura {
+  id                    Int         @id @default(autoincrement())
+  usuarioId             Int
+  planoId               Int
+  status                String      @default("trialing")
+  gateway               String      @default("asaas")
+  gatewayCustomerId     String?
+  gatewaySubscriptionId String?
+  gatewayCheckoutId     String?
+  checkoutUrl           String?
+  currentPeriodStart    DateTime?
+  currentPeriodEnd      DateTime?
+  cancelAtPeriodEnd     Boolean     @default(false)
+  trialEndsAt           DateTime?
+  createdAt             DateTime    @default(now())
+  updatedAt             DateTime    @updatedAt
+  plano                 Plano       @relation(fields: [planoId], references: [id])
+  pagamentos            Pagamento[]
+  usuario               Usuario     @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+  @@index([usuarioId])
+  @@index([status])
+}
+
+model Pagamento {
+  id               Int        @id @default(autoincrement())
+  assinaturaId     Int
+  status           String     @default("pending")
+  valor            Float
+  gateway          String     @default("asaas")
+  gatewayPaymentId String?    @unique
+  paidAt           DateTime?
+  dueDate          DateTime?
+  rawEventId       String?
+  createdAt        DateTime   @default(now())
+  updatedAt        DateTime   @updatedAt
+  assinatura       Assinatura @relation(fields: [assinaturaId], references: [id], onDelete: Cascade)
+
+  @@index([assinaturaId])
+  @@index([status])
 }
 
 model Cliente {

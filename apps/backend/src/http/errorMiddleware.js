@@ -17,6 +17,10 @@ function normalizeError(error) {
     return new HttpError(404, error.message)
   }
 
+  if (error?.message === 'Assinatura da barbearia inativa') {
+    return new HttpError(402, error.message)
+  }
+
   if (
     error?.message === 'Nome do serviço é obrigatório' ||
     error?.message === 'Barbearia é obrigatória para cadastrar o serviço' ||
@@ -43,6 +47,18 @@ function normalizeError(error) {
 
   if (error?.message === 'Cada usuário pode cadastrar apenas uma barbearia') {
     return new HttpError(409, error.message)
+  }
+
+  if (
+    error?.message === 'Usuário não encontrado' ||
+    error?.message === 'Plano não encontrado' ||
+    error?.message === 'Assinatura não encontrada'
+  ) {
+    return new HttpError(400, error.message)
+  }
+
+  if (error?.message === 'ASAAS_API_KEY não configurada') {
+    return new HttpError(503, error.message)
   }
 
   if (error?.message === 'Email ou senha inválidos' || error?.message === 'Sessão inválida') {

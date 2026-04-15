@@ -1,5 +1,5 @@
 import { Link } from "wouter";
-import { BarChart3, Calendar, Users, Settings, Scissors, LogOut } from "lucide-react";
+import { BarChart3, Calendar, Users, Settings, Scissors, LogOut, CreditCard } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useLocation } from "wouter";
@@ -26,6 +26,7 @@ export function Sidebar() {
     { href: "/agenda", label: "Agenda", icon: Calendar },
     { href: "/clientes", label: "Clientes", icon: Users },
     { href: "/servicos", label: "Serviços", icon: Scissors },
+    { href: "/assinatura", label: "Assinatura", icon: CreditCard },
     { href: "/configuracoes", label: "Configurações", icon: Settings },
   ];
 

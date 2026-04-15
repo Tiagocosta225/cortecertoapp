@@ -11,6 +11,7 @@ import Clientes from "./pages/Clientes";
 import Servicos from "./pages/Servicos";
 import Configuracoes from "./pages/Configuracoes";
 import Login from "./pages/Login";
+import Assinatura from "./pages/Assinatura";
 
 const AUTH_TOKEN_STORAGE_KEY = "cortecerto.authToken";
 const AUTH_USER_STORAGE_KEY = "cortecerto.authUser";
@@ -44,6 +45,7 @@ function Router() {
       <Route path={"/agenda"} component={Agenda} />
       <Route path={"/clientes"} component={Clientes} />
       <Route path={"/servicos"} component={Servicos} />
+      <Route path={"/assinatura"} component={Assinatura} />
       <Route path={"/configuracoes"} component={Configuracoes} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
