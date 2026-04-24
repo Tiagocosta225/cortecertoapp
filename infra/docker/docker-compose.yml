@@ -15,7 +15,7 @@ services:
       - postgres_logs:/var/log/postgresql
       - ./postgres/backup:/backup
     ports:
-      - "${POSTGRES_PORT:-5432}:5432"
+      - "${POSTGRES_HOST_BIND:-127.0.0.1}:${POSTGRES_PORT:-5432}:5432"
     networks:
       - app-network
     restart: unless-stopped
