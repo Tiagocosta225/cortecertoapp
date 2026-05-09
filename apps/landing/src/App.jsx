@@ -2,6 +2,38 @@ import { useState } from 'react'
 import logo from './assets/logo-cortecertoapp.png'
 import './App.css'
 
+const getAdminUrl = () => {
+  const envUrl = import.meta.env.VITE_ADMIN_URL
+
+  if (envUrl) {
+    return envUrl
+  }
+
+  if (typeof window === 'undefined') {
+    return '#'
+  }
+
+  const currentUrl = new URL(window.location.href)
+
+  if (currentUrl.hostname === 'localhost' || currentUrl.hostname === '127.0.0.1') {
+    currentUrl.port = '3000'
+    return currentUrl.toString()
+  }
+
+  if (currentUrl.hostname.startsWith('landing.')) {
+    currentUrl.hostname = currentUrl.hostname.replace(/^landing\./, 'admin.')
+    return currentUrl.toString()
+  }
+
+  if (currentUrl.hostname === 'www.cortecertoapp.com.br' || currentUrl.hostname === 'cortecertoapp.com.br') {
+    currentUrl.hostname = 'admin.cortecertoapp.com.br'
+    return currentUrl.toString()
+  }
+
+  currentUrl.hostname = `admin.${currentUrl.hostname}`
+  return currentUrl.toString()
+}
+
 const metrics = [
   { value: '1 link', label: 'para cada barbearia lotar a agenda com mais ordem' },
   { value: '24h', label: 'de reserva aberta enquanto você está atendendo' },
@@ -107,6 +139,7 @@ const pricing = [
 function App() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
+  const adminUrl = getAdminUrl()
 
   const handleSubmit = (event) => {
     event.preventDefault()
@@ -123,12 +156,17 @@ function App() {
           <div className="logo-container">
             <img src={logo} alt="CorteCertoApp" className="logo-img" />
           </div>
-          <nav className="nav">
-            <a href="#beneficios">Benefícios</a>
-            <a href="#como-funciona">Como funciona</a>
-            <a href="#oferta">Oferta</a>
-            <a href="#contato">Contato</a>
-          </nav>
+          <div className="header-actions">
+            <nav className="nav">
+              <a href="#beneficios">Benefícios</a>
+              <a href="#como-funciona">Como funciona</a>
+              <a href="#oferta">Oferta</a>
+              <a href="#contato">Contato</a>
+            </nav>
+            <a href={adminUrl} className="btn btn-admin">
+              Acessar painel admin
+            </a>
+          </div>
         </div>
       </header>
 
