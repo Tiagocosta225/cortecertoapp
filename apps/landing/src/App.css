@@ -74,7 +74,11 @@ a {
   gap: 1.25rem;
 }
 
-.logo-img,
+.logo-img {
+  height: 144px;
+  width: auto;
+}
+
 .footer-logo {
   height: 72px;
   width: auto;
@@ -683,7 +687,6 @@ a {
     padding-top: 36px;
   }
 
-  .logo-img,
   .footer-logo {
     height: 62px;
   }
@@ -724,7 +727,6 @@ a {
     padding: 0 16px;
   }
 
-  .logo-img,
   .footer-logo {
     height: 56px;
   }

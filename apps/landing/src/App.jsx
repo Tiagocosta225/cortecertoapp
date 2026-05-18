@@ -190,6 +190,9 @@ function App() {
                 <a href="#como-funciona" className="btn btn-secondary">
                   Ver como funciona
                 </a>
+                <a href={adminUrl} className="btn btn-admin">
+                  Acessar painel admin
+                </a>
               </div>
 
               <div className="metrics-grid">
