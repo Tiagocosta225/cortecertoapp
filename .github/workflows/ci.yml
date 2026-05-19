@@ -162,13 +162,9 @@ jobs:
             exit 1
           fi
 
-          # CI deploy should not compete for privileged host ports.
-          if grep -q '^HTTP_PORT=' infra/docker/.env; then
-            sed -i 's/^HTTP_PORT=.*/HTTP_PORT=8080/' infra/docker/.env
-          else
-            printf '\nHTTP_PORT=8080\n' >> infra/docker/.env
-          fi
-          echo "Forced HTTP_PORT=8080 for CI deploy."
+          # HTTP_PORT is no longer honored by compose; nginx is fixed on 8081.
+          sed -i '/^HTTP_PORT=/d' infra/docker/.env
+          echo "Removed legacy HTTP_PORT from deploy env; nginx publishes 8081."
 
       - name: Pull and deploy with Docker Compose
         env:
@@ -214,13 +210,13 @@ jobs:
           sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env up -d --remove-orphans"
           sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env ps"
 
-      - name: Diagnose port conflicts (80/8080)
+      - name: Diagnose port conflicts (80/8081)
         if: failure()
         run: |
           set +e
           echo "Processes using port 80:"
           ss -ltnp | grep ':80 ' || true
-          echo "Processes using port 8080:"
-          ss -ltnp | grep ':8080 ' || true
+          echo "Processes using port 8081:"
+          ss -ltnp | grep ':8081 ' || true
           echo "Running containers publishing ports:"
           docker ps --format 'table {{.Names}}\t{{.Ports}}'

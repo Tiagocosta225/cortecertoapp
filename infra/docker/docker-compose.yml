@@ -121,7 +121,7 @@ services:
       - ADMIN_HOST=${ADMIN_HOST:-admin.local}
       - LANDING_HOST=${LANDING_HOST:-landing.local}
     ports:
-      - "${NGINX_HOST_BIND:-127.0.0.1}:${HTTP_PORT:-8081}:80"
+      - "${NGINX_HOST_BIND:-127.0.0.1}:8081:80"
     networks:
       - app-network
     depends_on:

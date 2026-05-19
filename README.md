@@ -74,7 +74,7 @@ Use os arquivos `.env.example` como base.
 
 - `infra/docker/.env` controla banco, porta publicada do proxy e hostnames roteados pelo Nginx
 - `ADMIN_API_KEY`, `ALLOWED_ORIGINS` e `TRUST_PROXY` precisam estar definidos no `.env` do compose
-- `NGINX_HOST_BIND` e `HTTP_PORT` publicam o proxy Nginx no host apenas para teste local
+- `NGINX_HOST_BIND` controla o bind local do proxy Nginx, que publica sempre `8081:80`
 - `FRONTEND_HOST`, `ADMIN_HOST` e `LANDING_HOST` definem os `server_name` do Nginx
 - `TUNNEL_TOKEN` em `infra/docker/.env.cloudflare` habilita o servico `cloudflared` via `npm run compose:up:cloudflare`
 - o backend aplica `prisma migrate deploy` no startup do container
