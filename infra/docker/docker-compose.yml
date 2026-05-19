@@ -121,7 +121,7 @@ services:
       - ADMIN_HOST=${ADMIN_HOST:-admin.local}
       - LANDING_HOST=${LANDING_HOST:-landing.local}
     ports:
-      - "${HTTP_PORT:-80}:80"
+      - "${NGINX_HOST_BIND:-127.0.0.1}:${HTTP_PORT:-8081}:80"
     networks:
       - app-network
     depends_on:
@@ -133,10 +133,39 @@ services:
         condition: service_healthy
       landing:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+
+  cloudflared:
+    image: cloudflare/cloudflared:2025.5.0
+    container_name: cortecerto_cloudflared
+    env_file:
+      - path: ./.env.cloudflare
+        required: false
+    command:
+      - tunnel
+      - --no-autoupdate
+      - --metrics
+      - 0.0.0.0:2000
+      - run
+    profiles:
+      - cloudflare
+    expose:
+      - "2000"
+    networks:
+      - app-network
+    depends_on:
+      nginx:
+        condition: service_healthy
     restart: unless-stopped
 
 networks:
   app-network:
+    name: cortecerto_app-network
     driver: bridge
 
 volumes:

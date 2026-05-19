@@ -44,6 +44,7 @@ npm run check
 npm run dev:backend
 npm run dev:public-web
 npm run compose:up
+npm run compose:up:cloudflare
 ```
 
 ## Infra
@@ -59,6 +60,7 @@ Diretorio reservado para compartilhamento futuro de tipos, configuracoes e UI.
 ## Padrao de Env
 
 - `infra/docker/.env`: variaveis do ambiente docker
+- `infra/docker/.env.cloudflare`: token do Cloudflare Tunnel, baseado em `infra/docker/.env.cloudflare.example`
 - `infra/docker/.env.homolog.example`: base para homologacao com banco separado
 - `apps/backend/.env`: backend local
 - `apps/backend/.env.homolog.example`: base para backend em homologacao
@@ -72,11 +74,13 @@ Use os arquivos `.env.example` como base.
 
 - `infra/docker/.env` controla banco, porta publicada do proxy e hostnames roteados pelo Nginx
 - `ADMIN_API_KEY`, `ALLOWED_ORIGINS` e `TRUST_PROXY` precisam estar definidos no `.env` do compose
-- `HTTP_PORT` publica o proxy Nginx no host
+- `NGINX_HOST_BIND` e `HTTP_PORT` publicam o proxy Nginx no host apenas para teste local
 - `FRONTEND_HOST`, `ADMIN_HOST` e `LANDING_HOST` definem os `server_name` do Nginx
+- `TUNNEL_TOKEN` em `infra/docker/.env.cloudflare` habilita o servico `cloudflared` via `npm run compose:up:cloudflare`
 - o backend aplica `prisma migrate deploy` no startup do container
 - o `nginx` da stack escuta apenas na porta `80` e faz o roteamento interno para `frontend`, `admin-panel`, `landing` e `backend`
 - se a origem estiver atras da Cloudflare, a terminacao TLS deve acontecer na borda da Cloudflare e o trafego ate o origin segue em HTTP
+- no Cloudflare Tunnel, configure o servico/origin dos hostnames publicos como `http://nginx:80`; nao use `localhost`, `127.0.0.1` nem `HTTP_PORT`, porque o tunnel roda dentro de outro container
 
 ## Homologacao
 
