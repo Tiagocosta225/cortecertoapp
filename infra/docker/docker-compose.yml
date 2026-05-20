@@ -150,14 +150,11 @@ services:
       - tunnel
       - --no-autoupdate
       - --metrics
-      - 0.0.0.0:2000
+      - 127.0.0.1:2000
       - run
     profiles:
       - cloudflare
-    expose:
-      - "2000"
-    networks:
-      - app-network
+    network_mode: host
     depends_on:
       nginx:
         condition: service_healthy

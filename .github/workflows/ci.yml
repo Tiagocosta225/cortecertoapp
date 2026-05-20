@@ -148,6 +148,7 @@ jobs:
       - name: Prepare deploy env file
         env:
           DEPLOY_DOCKER_ENV: ${{ secrets.DEPLOY_DOCKER_ENV }}
+          CLOUDFLARED_TUNNEL_TOKEN: ${{ secrets.CLOUDFLARED_TUNNEL_TOKEN }}
         run: |
           set -euo pipefail
           if [ -n "${DEPLOY_DOCKER_ENV}" ]; then
@@ -165,6 +166,14 @@ jobs:
           # HTTP_PORT is no longer honored by compose; nginx is fixed on 8081.
           sed -i '/^HTTP_PORT=/d' infra/docker/.env
           echo "Removed legacy HTTP_PORT from deploy env; nginx publishes 8081."
+
+          if [ -n "${CLOUDFLARED_TUNNEL_TOKEN}" ]; then
+            printf "TUNNEL_TOKEN=%s\n" "${CLOUDFLARED_TUNNEL_TOKEN}" > infra/docker/.env.cloudflare
+            echo "Cloudflare Tunnel profile enabled for deploy."
+          else
+            rm -f infra/docker/.env.cloudflare
+            echo "::warning::CLOUDFLARED_TUNNEL_TOKEN secret not set. Deploying without cloudflared profile."
+          fi
 
       - name: Pull and deploy with Docker Compose
         env:
@@ -195,20 +204,21 @@ jobs:
           export IMAGE_OWNER="${owner_lc}"
           export IMAGE_TAG="${branch_tag}-latest"
 
-          if docker compose version >/dev/null 2>&1; then
-            compose_cmd="docker compose"
-          elif command -v docker-compose >/dev/null 2>&1; then
-            compose_cmd="docker-compose"
-          else
-            echo "::error::Neither 'docker compose' nor 'docker-compose' is available on runner."
+          if ! docker compose version >/dev/null 2>&1; then
+            echo "::error::Docker Compose v2 is required on the runner."
             exit 1
           fi
+          compose_profile_args=""
+          if [ -f infra/docker/.env.cloudflare ]; then
+            compose_profile_args="--profile cloudflare"
+          fi
 
-          retry 4 sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env pull"
-          sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env down --remove-orphans || true"
+          retry 4 sh -c "docker compose ${compose_profile_args} -f infra/docker/docker-compose.yml --env-file infra/docker/.env pull"
+          sh -c "docker compose ${compose_profile_args} -f infra/docker/docker-compose.yml --env-file infra/docker/.env down --remove-orphans || true"
+          docker ps -aq --filter ancestor=cloudflare/cloudflared:latest | xargs -r docker rm -f
           docker rm -f cortecerto_postgres >/dev/null 2>&1 || true
-          sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env up -d --remove-orphans"
-          sh -c "${compose_cmd} -f infra/docker/docker-compose.yml --env-file infra/docker/.env ps"
+          sh -c "docker compose ${compose_profile_args} -f infra/docker/docker-compose.yml --env-file infra/docker/.env up -d --remove-orphans"
+          sh -c "docker compose ${compose_profile_args} -f infra/docker/docker-compose.yml --env-file infra/docker/.env ps"
 
       - name: Diagnose port conflicts (80/8081)
         if: failure()

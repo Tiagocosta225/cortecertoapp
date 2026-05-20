@@ -16,9 +16,9 @@
     "build": "npm run build --workspaces --if-present",
     "lint": "npm run lint --workspaces --if-present",
     "check": "npm run check --workspaces --if-present",
-    "compose:up": "docker compose -f infra/docker/docker-compose.yml up --build",
-    "compose:up:cloudflare": "docker compose -f infra/docker/docker-compose.yml --profile cloudflare up --build -d",
-    "compose:down": "docker compose -f infra/docker/docker-compose.yml down",
-    "compose:logs": "docker compose -f infra/docker/docker-compose.yml logs -f"
+    "compose:up": "docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env up --build",
+    "compose:up:cloudflare": "docker compose --profile cloudflare -f infra/docker/docker-compose.yml --env-file infra/docker/.env up --build -d",
+    "compose:down": "docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env down",
+    "compose:logs": "docker compose -f infra/docker/docker-compose.yml --env-file infra/docker/.env logs -f"
   }
 }

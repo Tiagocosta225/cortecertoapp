@@ -1,5 +1,5 @@
-import Constants from 'expo-constants';
 import { Platform } from 'react-native';
+import { API_BASE_URL } from './appConfig';
 import { clearSession, getStoredToken, storeSession } from './tokenStore';
 
 type RequestOptions = RequestInit & {
@@ -21,11 +21,9 @@ export type AuthPayload = {
 };
 
 const DEFAULT_WEB_API_URL = '/api';
-const DEFAULT_NATIVE_API_URL = 'http://172.29.36.10:3000/api';
 
 function getApiBaseUrl() {
-  const extra = Constants.expoConfig?.extra as { apiBaseUrl?: string } | undefined;
-  return extra?.apiBaseUrl || process.env.EXPO_PUBLIC_API_BASE_URL || (Platform.OS === 'web' ? DEFAULT_WEB_API_URL : DEFAULT_NATIVE_API_URL);
+  return Platform.OS === 'web' ? process.env.EXPO_PUBLIC_API_BASE_URL || DEFAULT_WEB_API_URL : API_BASE_URL;
 }
 
 function buildUrl(path: string) {

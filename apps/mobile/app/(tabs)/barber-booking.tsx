@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ActivityIndicator, Pressable, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, RefreshControl, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { apiFetch } from '@/lib/api';
 
 type Barbearia = {
@@ -18,11 +18,11 @@ type Appointment = {
 };
 
 type Agenda = {
-  dias: Array<{
+  dias: {
     slotsLivres: number;
     recomendacao: string;
     agendamentos: Appointment[];
-  }>;
+  }[];
 };
 
 function toDateInput(date: Date) {

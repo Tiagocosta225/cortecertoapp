@@ -174,8 +174,9 @@ async function createAsaasCheckout({ assinatura, plano, usuario }) {
   const checkout = await asaasClient.request('/checkouts', {
     method: 'POST',
     body: JSON.stringify({
-      billingTypes: 'CREDIT_CARD',
-      chargeTypes: 'RECURRENT',
+      billingTypes: ['CREDIT_CARD'],
+      chargeTypes: ['RECURRENT'],
+      minutesToExpire: 60,
       customer: customerId,
       callback: {
         successUrl,
@@ -200,6 +201,7 @@ async function createAsaasCheckout({ assinatura, plano, usuario }) {
 
   return {
     checkoutId: checkout.id,
+    subscriptionId: checkout.subscription || checkout.subscriptionId || null,
     checkoutUrl: checkout.url || checkout.link || checkout.checkoutUrl,
   }
 }
@@ -245,6 +247,7 @@ class BillingService {
         planoId: plano.id,
         status: assinatura.status === 'active' ? 'active' : 'pending',
         gatewayCheckoutId: checkout.checkoutId,
+        gatewaySubscriptionId: checkout.subscriptionId || assinatura.gatewaySubscriptionId,
         checkoutUrl: checkout.checkoutUrl,
       },
       include: { plano: true, usuario: true },
@@ -312,9 +315,10 @@ class BillingService {
         include: { plano: true, usuario: true },
       })
     }
-    if (!assinatura && payment?.externalReference?.startsWith('assinatura:')) {
+    const externalReference = payment?.externalReference || checkout?.externalReference
+    if (!assinatura && externalReference?.startsWith('assinatura:')) {
       assinatura = await prisma.assinatura.findUnique({
-        where: { id: Number(payment.externalReference.replace('assinatura:', '')) },
+        where: { id: Number(externalReference.replace('assinatura:', '')) },
         include: { plano: true, usuario: true },
       })
     }

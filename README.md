@@ -80,7 +80,8 @@ Use os arquivos `.env.example` como base.
 - o backend aplica `prisma migrate deploy` no startup do container
 - o `nginx` da stack escuta apenas na porta `80` e faz o roteamento interno para `frontend`, `admin-panel`, `landing` e `backend`
 - se a origem estiver atras da Cloudflare, a terminacao TLS deve acontecer na borda da Cloudflare e o trafego ate o origin segue em HTTP
-- no Cloudflare Tunnel, configure o servico/origin dos hostnames publicos como `http://nginx:80`; nao use `localhost`, `127.0.0.1` nem `HTTP_PORT`, porque o tunnel roda dentro de outro container
+- no Cloudflare Tunnel, configure o servico/origin dos hostnames publicos como `http://localhost:8081`; o servico `cloudflared` do compose usa `network_mode: host` para acessar o Nginx publicado no host
+- nao suba `cloudflared` com `docker run`; o deploy remove containers soltos `cloudflare/cloudflared:latest` e usa o servico `cortecerto_cloudflared` do compose
 
 ## Homologacao
 

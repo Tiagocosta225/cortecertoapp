@@ -1,17 +1,19 @@
 {
   "expo": {
-    "name": "cortecertoapp-v.1",
-    "slug": "cortecertoapp-v.1",
+    "name": "CorteCertoApp",
+    "slug": "cortecertoapp",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "cortecertoappv1",
+    "scheme": "cortecertoapp",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true
     },
     "android": {
+      "package": "br.com.cortecertoapp.mobile",
+      "versionCode": 1,
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -45,7 +47,9 @@
       "reactCompiler": true
     },
     "extra": {
-      "apiBaseUrl": "http://172.29.36.10:3000/api"
+      "apiBaseUrl": "https://app.cortecertoapp.com.br/api",
+      "privacyPolicyUrl": "https://cortecertoapp.com.br/privacidade",
+      "accountDeletionUrl": "https://cortecertoapp.com.br/exclusao-de-conta"
     }
   }
 }

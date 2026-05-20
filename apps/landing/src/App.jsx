@@ -136,7 +136,104 @@ const pricing = [
   },
 ]
 
-function App() {
+const supportEmail = 'suporte@cortecertoapp.com.br'
+
+function LegalPage({ type }) {
+  const isDeletion = type === 'deletion'
+
+  return (
+    <div className="app legal-app">
+      <header className="header">
+        <div className="container header-inner">
+          <a href="/" className="logo-container" aria-label="CorteCertoApp">
+            <img src={logo} alt="CorteCertoApp" className="logo-img" />
+          </a>
+          <div className="header-actions">
+            <a href="/" className="btn btn-admin">
+              Voltar ao site
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <main className="legal-main">
+        <section className="container legal-section">
+          <p className="eyebrow">CorteCertoApp</p>
+          <h1>{isDeletion ? 'Exclusão de conta e dados' : 'Política de privacidade'}</h1>
+          <p className="legal-updated">Atualizado em 20 de maio de 2026.</p>
+
+          {isDeletion ? (
+            <>
+              <p>
+                Usuários do CorteCertoApp podem solicitar a exclusão da conta e dos dados pessoais associados ao
+                cadastro. Para iniciar a solicitação, envie um e-mail para{' '}
+                <a href={`mailto:${supportEmail}?subject=Exclusão de conta CorteCertoApp`}>{supportEmail}</a> usando o
+                e-mail cadastrado no aplicativo.
+              </p>
+              <h2>Como a solicitação é tratada</h2>
+              <p>
+                Após validar a titularidade da conta, removemos ou anonimizamos os dados pessoais que não sejam
+                necessários para obrigações legais, segurança, prevenção a fraude, suporte ou registros financeiros.
+              </p>
+              <h2>Dados que podem ser mantidos temporariamente</h2>
+              <p>
+                Alguns registros operacionais, fiscais, de pagamento e auditoria podem ser preservados pelo prazo
+                exigido por lei ou necessário para defesa de direitos. Quando esse prazo terminar, os dados serão
+                excluídos ou anonimizados.
+              </p>
+              <h2>Prazo de resposta</h2>
+              <p>
+                A primeira resposta será enviada em até 15 dias. Se precisarmos de informações adicionais para confirmar
+                a titularidade, entraremos em contato pelo e-mail informado.
+              </p>
+            </>
+          ) : (
+            <>
+              <p>
+                Esta política explica como o CorteCertoApp coleta, usa, armazena e protege dados de usuários que acessam
+                o aplicativo, o painel administrativo e a página pública de agendamento.
+              </p>
+              <h2>Dados coletados</h2>
+              <p>
+                Podemos coletar nome, e-mail, telefone, senha criptografada, dados da barbearia, serviços, clientes,
+                agendamentos, assinaturas, pagamentos e informações técnicas necessárias para segurança e funcionamento
+                da plataforma.
+              </p>
+              <h2>Finalidade de uso</h2>
+              <p>
+                Usamos os dados para autenticar usuários, operar agendas, exibir informações da barbearia, processar
+                assinaturas, prestar suporte, manter a segurança da conta e cumprir obrigações legais.
+              </p>
+              <h2>Compartilhamento</h2>
+              <p>
+                Dados podem ser compartilhados com provedores essenciais de infraestrutura, pagamento, hospedagem,
+                comunicação e segurança, sempre de acordo com a finalidade da plataforma.
+              </p>
+              <h2>Segurança</h2>
+              <p>
+                O tráfego de produção deve ocorrer por HTTPS. Senhas são armazenadas em formato criptográfico e tokens do
+                aplicativo móvel são guardados em armazenamento seguro do dispositivo quando disponível.
+              </p>
+              <h2>Retenção e exclusão</h2>
+              <p>
+                Os dados são mantidos enquanto a conta estiver ativa ou enquanto forem necessários para operação,
+                obrigações legais, auditoria, suporte e prevenção a fraude. A exclusão pode ser solicitada em{' '}
+                <a href="/exclusao-de-conta">cortecertoapp.com.br/exclusao-de-conta</a>.
+              </p>
+              <h2>Contato</h2>
+              <p>
+                Para dúvidas sobre privacidade, fale com a equipe pelo e-mail{' '}
+                <a href={`mailto:${supportEmail}`}>{supportEmail}</a>.
+              </p>
+            </>
+          )}
+        </section>
+      </main>
+    </div>
+  )
+}
+
+function LandingPage() {
   const [email, setEmail] = useState('')
   const [submitted, setSubmitted] = useState(false)
   const adminUrl = getAdminUrl()
@@ -191,7 +288,7 @@ function App() {
                   Ver como funciona
                 </a>
                 <a href={adminUrl} className="btn btn-admin">
-                  Acessar painel admin
+                  login
                 </a>
               </div>
 
@@ -419,11 +516,27 @@ function App() {
             <a href="#como-funciona">Como funciona</a>
             <a href="#oferta">Oferta</a>
             <a href="#contato">Contato</a>
+            <a href="/privacidade">Privacidade</a>
+            <a href="/exclusao-de-conta">Excluir conta</a>
           </div>
         </div>
       </footer>
     </div>
   )
+}
+
+function App() {
+  const path = typeof window === 'undefined' ? '/' : window.location.pathname
+
+  if (path === '/privacidade') {
+    return <LegalPage type="privacy" />
+  }
+
+  if (path === '/exclusao-de-conta') {
+    return <LegalPage type="deletion" />
+  }
+
+  return <LandingPage />
 }
 
 export default App

@@ -32,17 +32,17 @@ type Overview = {
 };
 
 type Agenda = {
-  dias: Array<{
+  dias: {
     slotsLivres: number;
-    agendamentos: Array<{
+    agendamentos: {
       id: number;
       horario: string;
       cliente: string;
       servico: string;
       status: string;
       valorTotal: number;
-    }>;
-  }>;
+    }[];
+  }[];
 };
 
 function toDateInput(date: Date) {

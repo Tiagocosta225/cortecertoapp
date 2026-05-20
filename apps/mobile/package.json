@@ -10,6 +10,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "build": "expo export --platform web",
+    "build:android:preview": "npx eas-cli build --platform android --profile preview",
+    "build:android:production": "npx eas-cli build --platform android --profile production",
+    "submit:android": "npx eas-cli submit --platform android --profile production",
     "check": "tsc --noEmit",
     "lint": "expo lint"
   },
@@ -25,6 +28,7 @@
     "expo-image": "~3.0.10",
     "expo-linking": "~8.0.8",
     "expo-router": "~6.0.14",
+    "expo-secure-store": "~15.0.7",
     "expo-splash-screen": "~31.0.10",
     "expo-status-bar": "~3.0.8",
     "expo-symbols": "~1.0.7",

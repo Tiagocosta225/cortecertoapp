@@ -95,7 +95,7 @@ export default function LoginRoute() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, justifyContent: 'center', backgroundColor: '#F8FAFC', padding: 24 },
-  logo: { alignSelf: 'center', width: 600, height: 300, marginBottom: 10 },
+  logo: { alignSelf: 'center', width: '100%', maxWidth: 320, height: 150, marginBottom: 10 },
   title: { textAlign: 'center', fontSize: 30, fontWeight: '800', color: '#0F172A' },
   subtitle: { marginTop: 8, marginBottom: 24, textAlign: 'center', color: '#64748B', lineHeight: 22 },
   tabs: { flexDirection: 'row', gap: 8, marginBottom: 14, borderRadius: 8, backgroundColor: '#E2E8F0', padding: 4 },

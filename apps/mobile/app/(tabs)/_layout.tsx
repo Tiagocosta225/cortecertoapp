@@ -1,5 +1,4 @@
-import { Tabs } from 'expo-router';
-import { Redirect } from 'expo-router';
+import { Redirect, Tabs } from 'expo-router';
 import React from 'react';
 import { ActivityIndicator, View } from 'react-native';
 

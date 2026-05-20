@@ -1,50 +1,53 @@
-# Welcome to your Expo app 👋
+# CorteCertoApp Mobile
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Aplicativo Expo/React Native do CorteCertoApp para Android.
 
-## Get started
-
-1. Install dependencies
-
-   ```bash
-   npm install
-   ```
-
-2. Start the app
-
-   ```bash
-   npx expo start
-   ```
-
-In the output, you'll find options to open the app in a
-
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
-
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
+## Desenvolvimento
 
 ```bash
-npm run reset-project
+npm install
+npm run dev -w @cortecerto/mobile
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+Por padrão, o build nativo usa a API pública:
 
-## Learn more
+```txt
+https://app.cortecertoapp.com.br/api
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+Para apontar para outro backend durante desenvolvimento:
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+```bash
+EXPO_PUBLIC_API_BASE_URL=http://SEU_IP_LOCAL:3000/api npm run dev -w @cortecerto/mobile
+```
 
-## Join the community
+## Play Store
 
-Join our community of developers creating universal apps.
+Antes de publicar, confira:
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+- `android.package`: `br.com.cortecertoapp.mobile`
+- `android.versionCode`: incrementado a cada envio
+- política de privacidade: `https://cortecertoapp.com.br/privacidade`
+- exclusão de conta: `https://cortecertoapp.com.br/exclusao-de-conta`
+- conta de teste para revisão do Google Play em App access
+- formulário Data safety preenchido com nome, e-mail, telefone, dados de conta, barbearia, agenda e pagamentos
+
+Build de teste instalável:
+
+```bash
+npm run build:android:preview -w @cortecerto/mobile
+```
+
+Build para Play Store em `.aab`:
+
+```bash
+npm run build:android:production -w @cortecerto/mobile
+```
+
+Envio para o track interno configurado no `eas.json`:
+
+```bash
+npm run submit:android -w @cortecerto/mobile
+```
+
+O primeiro upload no Google Play normalmente precisa ser feito manualmente no Play Console antes de automatizar o envio pelo EAS Submit.
